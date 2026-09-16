@@ -1,6 +1,6 @@
 """Draw the Flow Ctrl icons (talking head, sparkles, slashed hand) as 28 px alpha PNGs, then convert them
 to LVGL A8 C arrays with LVGL's own LVGLImage.py. Run from the project root:
-    python3 tools/make_icons.py .pio/libdeps/cyd2usb/lvgl/scripts/LVGLImage.py
+    python3 tools/make_icons.py .pio/libdeps/cyd2usb-mac/lvgl/scripts/LVGLImage.py
 Icons are alpha-only; the firmware recolors them per state."""
 import sys, os, subprocess, math
 from PIL import Image, ImageDraw

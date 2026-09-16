@@ -50,7 +50,7 @@ def annotate(frame, callouts, title, out, right_w=380):
 # --- Dictate page, at rest ---
 annotate(render("idle"), [
     (60, 40,  "Listening indicator",  "Flat dots when idle. Bars move while Wispr is capturing — white for hold-to-talk, coral for hands-free."),
-    (124, 40, "Discard",              "Sends Esc: throws away the current dictation without pasting."),
+    (124, 40, "Discard",              "Hands-free running: Esc cancels it. Otherwise: undo (Cmd+Z) removes the last paste."),
     (300, 40, "Page selector",        "A lozenge with a sliding green knob. Left: Dictate. Right: Transform. It only changes the page — it never sends anything."),
     (116, 134, "Hold to talk",         "Press and hold, speak, let go. Wispr transcribes and pastes at your cursor. Your everyday button."),
     (232, 134,"Send",                 "A Return key. Tap once the pasted words have landed to send a Claude prompt or a chat message."),

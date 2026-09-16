@@ -5,7 +5,7 @@
 //   HANDS-FREE    →  double-tap of the same chord (Wispr's "double-tap to lock" gesture);
 //                    STOP taps the chord once more
 //   SEND          →  Return (tap it once the pasted text has landed)
-//   DISCARD (trash)  →  Esc
+//   DISCARD (trash)  →  Esc during hands-free (cancel), else Cmd+Z / Ctrl+Z (undo the last paste)
 // Page 2 "TRANSFORM": Wispr Transforms on the current selection (table below): Prompt Engineer,
 //   Drawing note, Client email — plus ⌘A select-all and ⌥O view-diff.
 // Match PTT_MODS / PTT_KEY to Wispr Flow → Settings → General → Shortcuts → Push to talk.
@@ -21,6 +21,7 @@
 LV_IMAGE_DECLARE(ic_dictate);
 LV_IMAGE_DECLARE(ic_transform);
 LV_IMAGE_DECLARE(ic_handsfree);
+LV_IMAGE_DECLARE(logo_woodwerd);   // 240x111 A8 badge, tools/make_logo.py
 
 // ---------------- hardware ----------------
 #define SCREEN_W 320
@@ -46,6 +47,23 @@ LV_IMAGE_DECLARE(ic_handsfree);
 #ifndef BLE_NAME
 #define BLE_NAME "Flow Ctrl"
 #endif
+#include "version.h"
+
+// Host flavour: only key *names* on screen and the Select-all modifier differ. The HID codes the
+// board sends are identical; the OS maps Opt→Alt and Cmd→Win.
+#ifdef HOST_WIN
+#define HOST_NAME   "Windows"
+#define OPT_NAME    "Alt"
+#define SELALL_MODS MOD_CTRL
+#define SELALL_NAME "Ctrl A"
+#define UNDO_MODS   MOD_CTRL
+#else
+#define HOST_NAME   "Mac"
+#define OPT_NAME    "Opt"
+#define SELALL_MODS MOD_CMD
+#define SELALL_NAME "Cmd A"
+#define UNDO_MODS   MOD_CMD
+#endif
 
 // Chords Wispr Flow listens for (see docs.wisprflow.ai → Supported hotkeys)
 #ifndef PTT_MODS
@@ -54,15 +72,18 @@ LV_IMAGE_DECLARE(ic_handsfree);
 #ifndef PTT_KEY
 #define PTT_KEY   KEY_T
 #endif
+#ifndef PTT_LABEL                       // shown on the About page; set it too if you change the chord
+#define PTT_LABEL "Ctrl + " OPT_NAME " + T"
+#endif
 #define DOUBLE_TAP_GAP_MS 120           // gap between the two taps that lock hands-free
 
 
 // Wispr Transforms (Settings → Transforms). Act on the current selection. Add a row = a new button.
 struct Transform { const char* name; const char* hint; uint8_t mods; uint8_t key; };
 static const Transform XFORMS[] = {
-  { "PROMPT ENGINEER", "Opt 2  ·  built in",      MOD_OPT, KEY_2 },
-  { "DRAWING NOTE",    "Opt 3  ·  callouts", MOD_OPT, KEY_3 },
-  { "CLIENT EMAIL",    "Opt 4  ·  client tone", MOD_OPT, KEY_4 },
+  { "PROMPT ENGINEER", OPT_NAME " 2  ·  built in",    MOD_OPT, KEY_2 },
+  { "DRAWING NOTE",    OPT_NAME " 3  ·  callouts",    MOD_OPT, KEY_3 },
+  { "CLIENT EMAIL",    OPT_NAME " 4  ·  client tone", MOD_OPT, KEY_4 },
 };
 #define N_XFORMS (sizeof(XFORMS) / sizeof(XFORMS[0]))
 
@@ -135,6 +156,85 @@ static void show_toast(const char* s, uint32_t ms = 1400) {
   lv_label_set_text(toastTxt, s);
   lv_obj_remove_flag(toast, LV_OBJ_FLAG_HIDDEN);
   toastUntil = millis() + ms;
+}
+
+static lv_obj_t* box(lv_obj_t* parent, int x, int y, int w, int h, uint32_t color, int radius);
+static lv_obj_t* label(lv_obj_t* parent, const char* s, const lv_font_t* f, uint32_t color);
+
+// ---------------- splash (boot) and About page (long-press the title) ----------------
+// Both live on the top layer so they cover whatever page is showing. No swipe, nothing to learn:
+// the splash shows the version for two seconds at power-up; the About page is a long press on the
+// "Flow Ctrl" title, which is not a button and can't be hit by a heavy finger on HOLD TO TALK.
+static lv_obj_t* overlay = nullptr;
+#define SPLASH_MS      4000     // how long the boot splash stays before it fades
+#define SPLASH_FADE_MS 450
+static void overlay_close(lv_event_t*) { if (overlay) { lv_obj_delete(overlay); overlay = nullptr; } }
+static void splash_fade_cb(void*, int32_t v) {          // v: 255 → 0
+  if (!overlay) return;
+  lv_obj_set_style_bg_opa(overlay, v, 0);
+  for (uint32_t i = 0; i < lv_obj_get_child_count(overlay); i++) {
+    lv_obj_t* c = lv_obj_get_child(overlay, i);
+    lv_obj_set_style_text_opa(c, v, 0);
+    lv_obj_set_style_image_opa(c, v, 0);
+  }
+}
+static void splash_fade_done(lv_anim_t*) { overlay_close(nullptr); }
+static void splash_timer(lv_timer_t* t) {
+  lv_timer_delete(t);
+  lv_anim_t a; lv_anim_init(&a);
+  lv_anim_set_var(&a, overlay);
+  lv_anim_set_values(&a, 255, 0);
+  lv_anim_set_duration(&a, SPLASH_FADE_MS);
+  lv_anim_set_exec_cb(&a, splash_fade_cb);
+  lv_anim_set_completed_cb(&a, splash_fade_done);
+  lv_anim_start(&a);
+}
+
+static void show_about(bool splash) {
+  if (overlay) return;
+  overlay = box(lv_layer_top(), 0, 0, SCREEN_W, SCREEN_H, C_BG, 0);
+  lv_obj_add_flag(overlay, LV_OBJ_FLAG_CLICKABLE);
+  if (!splash) lv_obj_add_event_cb(overlay, overlay_close, LV_EVENT_CLICKED, nullptr);
+
+  static char ver[40];
+  snprintf(ver, sizeof(ver), "Flow Ctrl  ·  v" FW_VERSION "  ·  " HOST_NAME);
+
+  if (splash) {
+    // badge logo, then the two things a new owner needs: which firmware, and which chord to set
+    lv_obj_t* logo = lv_image_create(overlay);
+    lv_image_set_src(logo, &logo_woodwerd);
+    lv_obj_set_style_image_recolor(logo, C(C_TEXT), 0);
+    lv_obj_set_style_image_recolor_opa(logo, LV_OPA_COVER, 0);
+    lv_obj_align(logo, LV_ALIGN_TOP_MID, 0, 16);
+    lv_obj_t* v = label(overlay, ver, F_SMALL, C_TEXT_2);
+    lv_obj_align(v, LV_ALIGN_TOP_MID, 0, 140);
+    lv_obj_t* k = label(overlay, "PUSH TO TALK", F_SMALL, C_TEXT_3);
+    lv_obj_align(k, LV_ALIGN_TOP_MID, 0, 172);
+    lv_obj_t* c = label(overlay, PTT_LABEL, F_TITLE, C_TEXT);
+    lv_obj_align(c, LV_ALIGN_TOP_MID, 0, 192);
+    lv_timer_create(splash_timer, SPLASH_MS, nullptr);
+    return;
+  }
+  lv_obj_t* t = label(overlay, "Flow Ctrl", F_TITLE, C_TEXT);
+  lv_obj_align(t, LV_ALIGN_TOP_MID, 0, 22);
+  lv_obj_t* v = label(overlay, ver + 13, F_MONO, C_TEXT_2);     // "v0.9.4  ·  Mac"
+  lv_obj_align(v, LV_ALIGN_TOP_MID, 0, 52);
+  static char lines[240];
+  snprintf(lines, sizeof(lines),
+           "Push to talk   %s\nHands-free     double tap\nTrash          cancel / undo\nBluetooth      " BLE_NAME "\nAddress        %s\nLink           %s",
+           PTT_LABEL, BleKbd::address(), BleKbd::connected() ? "connected" : "pairing");
+  lv_obj_t* body = label(overlay, lines, F_MONO, C_TEXT);
+  lv_obj_set_style_text_line_space(body, 6, 0);
+  lv_obj_align(body, LV_ALIGN_TOP_LEFT, 24, 84);
+  lv_obj_t* url = label(overlay, "github.com/WOODWERD/cyd-flow-ctrl", F_MONO, C_TEXT_2);
+  lv_obj_align(url, LV_ALIGN_TOP_LEFT, 24, 190);
+  lv_obj_t* footL = label(overlay, "WOODWERD LLC", F_SMALL, C_TEXT_3);
+  lv_obj_align(footL, LV_ALIGN_BOTTOM_LEFT, 24, -12);
+  lv_obj_t* footR = label(overlay, "tap to close", F_SMALL, C_TEXT_3);
+  lv_obj_align(footR, LV_ALIGN_BOTTOM_RIGHT, -24, -12);
+}
+static void title_event(lv_event_t* e) {
+  if (lv_event_get_code(e) == LV_EVENT_LONG_PRESSED) show_about(false);
 }
 
 static lv_obj_t* box(lv_obj_t* parent, int x, int y, int w, int h, uint32_t color, int radius) {
@@ -313,11 +413,19 @@ static void send_return() {
   BleKbd::tap(0, KEY_ENTER);
   show_toast("Sent");
 }
+// The trash means two things, matching what you'd reach for:
+//  - hands-free running: Esc cancels the open Wispr session, nothing pastes
+//  - otherwise: Undo (Cmd+Z / Ctrl+Z) removes the text the last hold just pasted
 static void discard() {
-  BleKbd::releaseAll();
-  BleKbd::tap(0, KEY_ESC);
-  cap = CAP_IDLE;
-  show_toast("Discarded");
+  if (cap == CAP_PTT) return;                  // never fire under a held chord
+  if (cap == CAP_HANDSFREE) {
+    BleKbd::tap(0, KEY_ESC);
+    cap = CAP_IDLE;
+    show_toast("Cancelled — nothing sent");
+  } else {
+    BleKbd::press(UNDO_MODS); delay(12); BleKbd::press(UNDO_MODS, KEY_Z); delay(45); BleKbd::releaseAll();
+    show_toast("Undo");
+  }
   render_state();
 }
 
@@ -371,7 +479,7 @@ static void xf_event(lv_event_t* e) {
 }
 static void select_all_event(lv_event_t* e) {
   if (lv_event_get_code(e) != LV_EVENT_CLICKED) return;
-  BleKbd::press(MOD_CMD); delay(12); BleKbd::press(MOD_CMD, KEY_A); delay(45); BleKbd::releaseAll();
+  BleKbd::press(SELALL_MODS); delay(12); BleKbd::press(SELALL_MODS, KEY_A); delay(45); BleKbd::releaseAll();
   show_toast("Selected all");
 }
 static void diff_event(lv_event_t* e) {
@@ -408,6 +516,10 @@ static void ui_build() {
   dot = box(scr, 16, 14, 8, 8, C_WARN, 4);
   lblTitle = label(scr, "Flow Ctrl", F_SMALL, C_TEXT_2);
   lv_obj_set_pos(lblTitle, 32, 9);
+  lv_obj_t* titleHit = box(scr, 0, 0, 150, 34, C_BG, 0);      // long-press → About page
+  lv_obj_set_style_bg_opa(titleHit, LV_OPA_TRANSP, 0);
+  lv_obj_add_flag(titleHit, LV_OBJ_FLAG_CLICKABLE);
+  lv_obj_add_event_cb(titleHit, title_event, LV_EVENT_LONG_PRESSED, nullptr);
 
   // --- shared row (both pages): waveform circle · trash · [dictate | transform] lozenge with a sliding knob ---
   const int rowY = 36, D = 56;
@@ -505,10 +617,10 @@ static void ui_build() {
     }
     const int sy = gy + 2 * gh + gap + 6, sh = 26;   // utility strip
     lv_obj_t* bA = make_button(pageXf, gx, sy, gw, sh);
-    lv_obj_t* lA = label(bA, "Select all   Cmd A", &lv_font_montserrat_14, C_TEXT_2); lv_obj_center(lA);
+    lv_obj_t* lA = label(bA, "Select all   " SELALL_NAME, &lv_font_montserrat_14, C_TEXT_2); lv_obj_center(lA);
     lv_obj_add_event_cb(bA, select_all_event, LV_EVENT_CLICKED, nullptr);
     lv_obj_t* bD = make_button(pageXf, gx + gw + gap, sy, gw, sh);
-    lv_obj_t* lD = label(bD, "View diff   Opt O", &lv_font_montserrat_14, C_TEXT_2); lv_obj_center(lD);
+    lv_obj_t* lD = label(bD, "View diff   " OPT_NAME " O", &lv_font_montserrat_14, C_TEXT_2); lv_obj_center(lD);
     lv_obj_add_event_cb(bD, diff_event, LV_EVENT_CLICKED, nullptr);
   }
   set_page(0);
@@ -521,6 +633,7 @@ static void ui_build() {
   lv_obj_add_flag(toast, LV_OBJ_FLAG_HIDDEN);
 
   render_state();
+  show_about(true);   // boot splash: version for two seconds
 }
 
 // ---------------- housekeeping ----------------
@@ -551,13 +664,24 @@ static void ui_tick(lv_timer_t*) {
 // ---------------- arduino ----------------
 void setup() {
   Serial.begin(115200);
-  Serial.println("Flow Ctrl v0.9.3 - BLE no-latency link");
+  Serial.println("Flow Ctrl v" FW_VERSION " (" HOST_NAME " build)");
   pinMode(LED_R, OUTPUT); pinMode(LED_G, OUTPUT); pinMode(LED_B, OUTPUT); led(false, false, false);
 
   tft.init();
   tft.setRotation(PANEL_ROTATION);
   tft.setSwapBytes(true);
   tft.fillScreen(TFT_BLACK);
+  // Paint the badge straight to the panel before LVGL exists, so the very first thing the glass shows
+  // is the splash, not a strip-by-strip reveal of the UI. LVGL redraws the identical pixels moments later.
+  {
+    const int w = logo_woodwerd.header.w, h = logo_woodwerd.header.h, x0 = (SCREEN_W - w) / 2, y0 = 16;
+    static uint16_t line[240];
+    const uint8_t* a = (const uint8_t*)logo_woodwerd.data;
+    for (int y = 0; y < h; y++) {
+      for (int x = 0; x < w; x++) { uint8_t v = a[y * w + x]; line[x] = ((v >> 3) << 11) | ((v >> 2) << 5) | (v >> 3); }
+      tft.pushImage(x0, y0 + y, w, 1, line);
+    }
+  }
   ledcSetup(BL_CH, 5000, 8);
   ledcAttachPin(BL_PIN, BL_CH);
   bl_set(BL_FULL);
@@ -578,6 +702,7 @@ void setup() {
   lv_indev_set_read_cb(indev, touch_read);
 
   ui_build();
+  lv_timer_handler();             // draw the full splash (logo + text) before the ~1 s of BLE init
   BleKbd::begin(BLE_NAME);
 
   lv_timer_create(ui_tick, 50, nullptr);

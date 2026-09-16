@@ -142,6 +142,11 @@ void BleKbd::begin(const char* deviceName) {
 }
 
 bool BleKbd::connected() { return isConnected; }
+const char* BleKbd::address() {
+  static std::string a;
+  a = NimBLEDevice::getAddress().toString();
+  return a.c_str();
+}
 
 void BleKbd::tick() {
   if (!paramReqAt || !isConnected || (int32_t)(millis() - paramReqAt) < 0) return;

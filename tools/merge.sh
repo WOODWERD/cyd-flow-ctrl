@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Build a single 0x0 flash image from the PlatformIO build. Usage: tools/merge.sh [env] [version]
+# Build a single 0x0 flash image from the PlatformIO build. Usage: tools/merge.sh [env] [version]   e.g. tools/merge.sh cyd2usb-win
 set -e
-ENV=${1:-cyd2usb}; VER=${2:-v0.1}
+ENV=${1:-cyd2usb-mac}; VER=${2:-v$(sed -n 's/.*FW_VERSION "\(.*\)"/\1/p' include/version.h)}
 B=.pio/build/$ENV
 APP0=$(find ~/.platformio/packages/framework-arduinoespressif32 -name boot_app0.bin | head -1)
 ESPT=$(find ~/.platformio/packages/tool-esptoolpy -name esptool.py | head -1)

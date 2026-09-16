@@ -10,7 +10,7 @@ the computer, and nothing about your Wispr setup changes.
 - **Hold to talk** — press and hold the big button, speak, let go: Wispr transcribes and pastes.
 - **Hands-free** — tap once to lock in, talk for as long as you like, tap **STOP** to paste it all.
 - **Send** — a Return key, so a dictated Claude prompt or chat message goes without touching the keyboard.
-- **Discard** — sends `Esc` to throw the dictation away.
+- **Discard** — the trash: cancels a running hands-free session (`Esc`), or undoes the last paste (`Cmd+Z`) after a hold.
 - **Transforms** — a second page fires Wispr's AI rewrites (Prompt Engineer, plus your own) on selected text.
 - Printed split case with only USB-C exposed. STL/STEP included.
 
@@ -35,7 +35,8 @@ Wispr's *Push to talk* shortcut to that (Settings → General → Shortcuts), or
 | **STOP** (tap, while hands-free) | chord tapped once | ends the session, pastes |
 | **STOP** (long-press) | nothing | resets the button's state only — use if you stopped Flow from the Mac |
 | **SEND** | `Return` | sends what was just pasted — a Claude prompt, a chat message. Tap it once the words have landed |
-| **Discard** (trash button in the top row) | `Esc` | discards the current dictation |
+| **Discard** (trash, top row) — hands-free running | `Esc` | cancels the session, nothing pastes |
+| **Discard** — otherwise | `Cmd+Z` (`Ctrl+Z` on Windows) | undoes the last paste: removes what the hold just dictated |
 | **Page selector** (lozenge, top row) | nothing | slides between the Dictate and Transform pages |
 
 There is no channel from Wispr back to the button, so the on-screen state is the button's best
@@ -43,12 +44,12 @@ guess. If they get out of sync, long-press STOP.
 
 ## Quick start (no toolchain)
 
-1. **Flash.** Grab `release/flow-ctrl-v0.9.3-cyd2usb.bin` (USB-C / 2-USB board) or build the `cyd` env
-   for the original micro-USB board. Either:
+1. **Flash.** Grab `release/flow-ctrl-v0.9.4-cyd2usb-mac.bin` (USB-C / 2-USB board, Mac) —
+   or `…-cyd2usb-win.bin` for a Windows PC — or build the `cyd` env for the original micro-USB board. Either:
    - [ESP Web Tools / esptool-js](https://espressif.github.io/esptool-js/) in Chrome or Edge — 460800 baud, address `0x0`, or
    - `pip install esptool` then
      ```
-     esptool.py --chip esp32 --port /dev/cu.usbserial-XXXX --baud 460800 write_flash 0x0 flow-ctrl-v0.9.3-cyd2usb.bin
+     esptool.py --chip esp32 --port /dev/cu.usbserial-XXXX --baud 460800 write_flash 0x0 flow-ctrl-v0.9.4-cyd2usb-mac.bin
      ```
    (Hold BOOT while plugging in if the port doesn't show up. 921600 baud is unreliable on the CH340.)
 2. **Pair.** System Settings → Bluetooth → **"Flow Ctrl"**. The top-left dot turns green and the buttons
@@ -56,6 +57,15 @@ guess. If they get out of sync, long-press STOP.
 3. **Wispr Flow.** Settings → General → Shortcuts → *Push to talk* → press `Ctrl + Opt + T`.
    Wispr's hands-free lock follows the push-to-talk key automatically, so that's the only setting.
 4. Talk.
+
+**Windows** works the same way: pair in Settings → Bluetooth, and set Wispr Flow's push-to-talk to
+**Ctrl + Alt + T** (the board sends the same keys; Windows just calls Opt "Alt"). Use the `-win`
+image so the screen says Alt/Ctrl and *Select all* sends `Ctrl+A` rather than `Win+A`. Note the board
+bonds to whichever computer pairs it; to move it between a Mac and a PC, forget it on the one you're
+leaving.
+
+**Which firmware is on it?** The version and chord show for four seconds at power-up; long-press the **Flow Ctrl**
+title (top-left) any time for the About page — version, build, chord, Bluetooth address.
 
 If the chords do nothing in Terminal or a password field, that's macOS *Secure Keyboard Entry* — see
 Wispr's help article on it. It affects every keyboard, not just this one.
@@ -84,6 +94,7 @@ The top row — waveform circle, trash (Esc) and the page selector — is shared
 - [Getting Started](docs/GETTING_STARTED.md) — setup, every button and its intent, the three flows, troubleshooting
 - [Case](case/README.md) — the printable files, print settings, tolerances
 - [Firmware & code](docs/firmware.md) — build flags, code map, how to drive another app with it
+- [Bench test](docs/TESTING.md) — the checklist every release has to pass
 - [Changelog](CHANGELOG.md)
 - [Publishing checklist](docs/PUBLISHING.md) — how this reaches the CYD project list and the docs site
 

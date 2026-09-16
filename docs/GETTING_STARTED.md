@@ -13,14 +13,16 @@ then what each button is for.
 
 **Flash the firmware.** Plug the board in over USB-C and either use the web flasher in Chrome
 ([esptool-js](https://espressif.github.io/esptool-js/): 460800 baud, address `0x0`,
-file `release/flow-ctrl-v0.9.3-cyd2usb.bin`) or, from a terminal:
+file `release/flow-ctrl-v0.9.4-cyd2usb-mac.bin`) or, from a terminal:
 
 ```
 pip install esptool
-esptool.py --chip esp32 --port /dev/cu.usbserial-XXXX --baud 460800 write_flash 0x0 flow-ctrl-v0.9.3-cyd2usb.bin
+esptool.py --chip esp32 --port /dev/cu.usbserial-XXXX --baud 460800 write_flash 0x0 flow-ctrl-v0.9.4-cyd2usb-mac.bin
 ```
 
-The screen comes up with an amber dot and "Pairing…".
+The screen shows "Flow Ctrl · v0.9.4 · Mac" with the WOODWERD badge and the push-to-talk chord for four seconds, then comes up with an amber dot and
+"Pairing…". (Long-press the **Flow Ctrl** title in the top-left corner at any time to see that again,
+with the chord it sends and its Bluetooth address. Tap anywhere to close.)
 
 **Pair it.** System Settings → Bluetooth → **Flow Ctrl** → Connect. The dot turns green, the title
 reads "Flow Ctrl", and the buttons wake up. The Mac remembers it; from now on it reconnects on its own
@@ -34,6 +36,13 @@ chord, the firmware's chord is a build flag — see the README.)
 two custom transforms and give them the shortcuts **Opt + 3** and **Opt + 4**. Suggested prompts are
 in the README. Prompt Engineer is built in and needs nothing.
 
+**On a Windows PC instead.** Flash `flow-ctrl-v0.9.4-cyd2usb-win.bin` (same board; the screen says
+Alt/Ctrl instead of Opt/Cmd and *Select all* sends `Ctrl+A`). Pair in Settings → Bluetooth → Add
+device. In Wispr Flow for Windows set push-to-talk to **Ctrl + Alt + T** — that is exactly what the
+board's chord becomes on Windows. Check what the Windows app assigns to Transforms before relying on the
+second page. The board bonds to one computer at a time: to move it from a Mac to a PC, forget it on the
+Mac first, or the Mac will keep reconnecting to it.
+
 Then put it where your hand rests when you are not typing. It is always on, always full brightness,
 and never sleeps — a button you have to wake up first is not a button.
 
@@ -46,8 +55,10 @@ This is the page it wakes up on and the one you will live on.
 1. **Listening indicator.** The circle shows what Wispr is doing. Flat dots: idle. White bars: you are
    holding to talk. Coral bars: a hands-free session is running. It is on both pages, so you can
    never lose track of an open session.
-2. **Discard.** Sends `Esc`. Wispr throws away whatever it is currently transcribing and pastes
-   nothing. Use it when you said the wrong thing.
+2. **Discard.** The trash does the thing you would reach for: while a hands-free session is running
+   it sends `Esc` and Wispr cancels it, nothing pastes; any other time it sends `Cmd+Z`, which undoes
+   the last paste and removes what you just dictated from the field. (A hold cannot be cancelled
+   mid-way — Wispr starts transcribing the instant you let go — so after a hold, undo is the answer.)
 3. **Page selector.** A lozenge with a green knob that slides between two icons — the talking head
    (Dictate) and the sparkles (Transform). It only changes what the screen shows. It never sends a key.
 4. **Hold to talk.** The everyday button. Press and keep your finger down, say a sentence or two, let
@@ -69,7 +80,7 @@ status line counts the session up.
 - Talk. Pause. Think. Nothing times out on the button's side.
 - **STOP** ends the session; Wispr transcribes and pastes everything you said as one block. The row
   slides back to normal.
-- **Discard** (the trash) cancels the session without pasting.
+- **Discard** (the trash) cancels the session without pasting. After it has pasted, the trash becomes *undo* instead.
 - If you stopped Wispr from the Mac instead — clicked its bar, hit Esc on the keyboard — the button
   does not know, because nothing flows back from the Mac to it. **Long-press STOP** to reset the
   button without sending anything.
@@ -113,7 +124,7 @@ Claude receives is better than what you said.
 | Symptom | Likely cause |
 |---|---|
 | Amber dot, "Pairing…" | Not connected. Pair in Bluetooth settings; if it was paired before, toggle Bluetooth on the Mac. |
-| Keeps dropping back to "Pairing…" every minute or two | Firmware older than v0.9.3. Reflash — see [Firmware & code](firmware.md#notes-for-anyone-adapting-it) for what changed. |
+| Keeps dropping back to "Pairing…" every minute or two | Firmware older than v0.9.4. Reflash — see [Firmware & code](firmware.md#notes-for-anyone-adapting-it) for what changed. |
 | Green dot, but nothing happens | Wispr's push-to-talk shortcut is not `Ctrl+Opt+T`, or Wispr is not running. |
 | Works everywhere except Terminal / a password field | macOS *Secure Keyboard Entry* blocks Wispr there for every keyboard. Not a Flow Ctrl problem. |
 | Hands-free starts but a tap of STOP does not paste | Wispr missed the double-tap that starts the lock. Try again; if it is consistent, the tap gap is a constant in `src/main.cpp`. |

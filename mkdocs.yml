@@ -34,6 +34,7 @@ nav:
   - The case: case.md
   - Flash it: flash/index.md
   - Firmware & code: firmware.md
+  - Bench test: TESTING.md
   - Changelog: changelog.md
   - Publishing: PUBLISHING.md
   - Notices & license: notices.md

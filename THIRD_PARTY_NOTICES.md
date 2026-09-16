@@ -48,3 +48,8 @@ that emulates a Bluetooth keyboard and sends ordinary keyboard shortcuts to the 
 not affiliated with, endorsed by, or supported by Wispr. No Wispr artwork, logos, or code are used;
 the on-screen waveform pill is an original drawing inspired by the app's listening indicator.
 "Flow Ctrl" is used descriptively (a key that triggers Flow) and is not claimed as a brand.
+
+The **WOODWERD** name and badge logo (`tools/logo/`, `src/assets/logo_woodwerd.c`, shown on the boot
+splash) are trademarks of WOODWERD LLC and are **not** covered by the MIT licence. You may build and
+use this firmware as published; if you fork it for your own product, replace the logo with your own
+(`tools/make_logo.py` takes any SVG).

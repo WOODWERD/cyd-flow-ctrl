@@ -14,6 +14,7 @@
 #define KEY_ENTER 0x28
 #define KEY_A     0x04
 #define KEY_O     0x12
+#define KEY_Z     0x1D
 #define KEY_2     0x1F
 #define KEY_3     0x20
 #define KEY_4     0x21
@@ -22,6 +23,8 @@
 namespace BleKbd {
   void begin(const char* deviceName);
   bool connected();
+  // Own Bluetooth address as text (for the About page)
+  const char* address();
   // Call from loop(): sends the deferred connection-parameter request after a connect.
   void tick();
   // Hold / release a chord. keys = up to 6 usage codes (0 = none).

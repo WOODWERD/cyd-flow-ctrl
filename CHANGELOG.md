@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.9.4 — 2026-09-16
+- **Windows build** (`cyd2usb-win` env, `flow-ctrl-v0.9.4-cyd2usb-win.bin`): Alt/Ctrl names on screen,
+  *Select all* sends `Ctrl+A` (the Mac build's `Cmd+A` becomes `Win+A` on Windows and opens the Action
+  Center). Push-to-talk arrives as **Ctrl + Alt + T**. Second install button on the Flash page.
+- **Boot splash:** the WOODWERD badge, the firmware version and build, and the push-to-talk chord the
+  board is programmed for — four seconds, then a fade. Painted before anything else so there is no
+  half-drawn frame at power-up.
+- **About page:** long-press the *Flow Ctrl* title (version, build, chord, Bluetooth name and address,
+  link state). Tap to close.
+- **Discard is now useful after a hold:** it still cancels a running hands-free session (`Esc`), and
+  otherwise sends Undo (`Cmd+Z` / `Ctrl+Z`) to remove the last paste. Previously Esc after a hold did
+  nothing, because Wispr had already transcribed.
+- `docs/TESTING.md`: the bench checklist a release has to pass.
+- Build envs renamed `cyd2usb-mac` / `cyd2usb-win`; images `flow-ctrl-v0.9.4-cyd2usb-mac.bin` /
+  `-win.bin`. Version lives in `include/version.h`; `tools/merge.sh` names the image from it.
+
 ## v0.9.3 — 2026-09-16
 - **Fix:** the Bluetooth link no longer drops every minute or two on macOS. The Mac moves a bonded
   keyboard to a high-latency link; the ESP32 could sleep past a channel-map update and get
