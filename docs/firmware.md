@@ -6,7 +6,7 @@
 pip install platformio
 pio run -e cyd2usb          # USB-C / 2-USB board (ST7789, BGR)
 pio run -e cyd              # original micro-USB board (ILI9341)
-tools/merge.sh cyd2usb v0.9 # single 0x0 image from the build
+tools/merge.sh cyd2usb v0.9.3 # single 0x0 image from the build
 ```
 
 Build flags (add to `build_flags` or `-D` on the command line):
@@ -63,6 +63,15 @@ release/            prebuilt merged image
   accurate after a few presses. `TOUCH_DEBUG` shows the raw numbers if a board is far off.
 - The HID layer sends modifiers in one report and the key in the next, 12 ms later, like a physical
   keyboard does — some apps ignore a chord that arrives in a single report.
+- **Bluetooth link tuning (v0.9.3).** macOS opens a HID link with a 720 ms supervision timeout, then
+  moves a bonded keyboard to *interval 15 ms, latency 22*. On the ESP32 that latency is the problem:
+  the board is allowed to sleep through 22 connection events, occasionally misses a channel-map
+  instant, and the Mac drops the link with `0x228` — which looked like the button "going back into
+  pairing mode" every minute or two. `ble_kbd.cpp` therefore waits until the link is encrypted, then
+  asks for **latency 0, 6 s timeout** (`BleKbd::tick()` from `loop()`), and asks again if the Mac
+  re-applies latency (three tries per connection, so it can never ping-pong). The board is
+  USB-powered, so listening on every event costs nothing. The serial log at 115200 prints every
+  parameter change and decodes disconnect reasons if you need to see it on your own Mac.
 - Any other app with a keyboard shortcut (Superwhisper, MacWhisper, a meeting mute key, a macro)
   can be driven the same way: change `PTT_MODS` / `PTT_KEY`.
 

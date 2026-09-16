@@ -20,7 +20,7 @@ boards need a USB-C → USB-A cable rather than C-to-C.
 
 ```
 pip install esptool
-esptool.py --chip esp32 --port /dev/cu.usbserial-XXXX --baud 460800 write_flash 0x0 flow-ctrl-v0.9-cyd2usb.bin
+esptool.py --chip esp32 --port /dev/cu.usbserial-XXXX --baud 460800 write_flash 0x0 flow-ctrl-v0.9.3-cyd2usb.bin
 ```
 
 The image is in the repo under `release/`, and attached to each GitHub release.

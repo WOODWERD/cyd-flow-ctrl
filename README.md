@@ -43,12 +43,12 @@ guess. If they get out of sync, long-press STOP.
 
 ## Quick start (no toolchain)
 
-1. **Flash.** Grab `release/flow-ctrl-v0.9-cyd2usb.bin` (USB-C / 2-USB board) or build the `cyd` env
+1. **Flash.** Grab `release/flow-ctrl-v0.9.3-cyd2usb.bin` (USB-C / 2-USB board) or build the `cyd` env
    for the original micro-USB board. Either:
    - [ESP Web Tools / esptool-js](https://espressif.github.io/esptool-js/) in Chrome or Edge — 460800 baud, address `0x0`, or
    - `pip install esptool` then
      ```
-     esptool.py --chip esp32 --port /dev/cu.usbserial-XXXX --baud 460800 write_flash 0x0 flow-ctrl-v0.9-cyd2usb.bin
+     esptool.py --chip esp32 --port /dev/cu.usbserial-XXXX --baud 460800 write_flash 0x0 flow-ctrl-v0.9.3-cyd2usb.bin
      ```
    (Hold BOOT while plugging in if the port doesn't show up. 921600 baud is unreliable on the CH340.)
 2. **Pair.** System Settings → Bluetooth → **"Flow Ctrl"**. The top-left dot turns green and the buttons
@@ -84,6 +84,7 @@ The top row — waveform circle, trash (Esc) and the page selector — is shared
 - [Getting Started](docs/GETTING_STARTED.md) — setup, every button and its intent, the three flows, troubleshooting
 - [Case](case/README.md) — the printable files, print settings, tolerances
 - [Firmware & code](docs/firmware.md) — build flags, code map, how to drive another app with it
+- [Changelog](CHANGELOG.md)
 - [Publishing checklist](docs/PUBLISHING.md) — how this reaches the CYD project list and the docs site
 
 ## Case

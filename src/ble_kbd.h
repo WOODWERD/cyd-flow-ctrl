@@ -22,6 +22,8 @@
 namespace BleKbd {
   void begin(const char* deviceName);
   bool connected();
+  // Call from loop(): sends the deferred connection-parameter request after a connect.
+  void tick();
   // Hold / release a chord. keys = up to 6 usage codes (0 = none).
   void press(uint8_t modifiers, uint8_t key = 0);
   void releaseAll();

@@ -551,7 +551,7 @@ static void ui_tick(lv_timer_t*) {
 // ---------------- arduino ----------------
 void setup() {
   Serial.begin(115200);
-  Serial.println("Flow Ctrl v0.9");
+  Serial.println("Flow Ctrl v0.9.3 - BLE no-latency link");
   pinMode(LED_R, OUTPUT); pinMode(LED_G, OUTPUT); pinMode(LED_B, OUTPUT); led(false, false, false);
 
   tft.init();
@@ -589,5 +589,6 @@ void loop() {
   lv_tick_inc(millis() - lastTick);
   lastTick = millis();
   lv_timer_handler();
+  BleKbd::tick();
   delay(5);
 }
