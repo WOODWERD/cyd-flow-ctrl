@@ -19,10 +19,11 @@ jobs:
       # the docs site reuses the repo-level files: README → Home, case/ → The case, notices
       - run: |
           cp README.md docs/index.md
-          sed -e 's|](docs/|](|g' -e 's|](case/README.md)|](case.md)|g' -e 's|](THIRD_PARTY_NOTICES.md)|](notices.md)|g' -i docs/index.md
+          sed -e 's|](docs/|](|g' -e 's|](case/README.md)|](case.md)|g' -e 's|](THIRD_PARTY_NOTICES.md)|](notices.md)|g' -e 's|](CHANGELOG.md)|](changelog.md)|g' -i docs/index.md
           cp case/README.md docs/case.md && sed -e 's|](../docs/|](|g' -e 's|](BOM.csv)|](https://github.com/${{ github.repository }}/blob/main/case/BOM.csv)|g' -e 's|](Fastener_Spec.pdf)|](Fastener_Spec.pdf)|g' -i docs/case.md
           cp case/Fastener_Spec.pdf docs/Fastener_Spec.pdf
           cp THIRD_PARTY_NOTICES.md docs/notices.md && printf '\n\n## License\n\n```\n' >> docs/notices.md && cat LICENSE >> docs/notices.md && printf '\n```\n' >> docs/notices.md
+          cp CHANGELOG.md docs/changelog.md
           cp release/*.bin docs/flash/
           # repo-relative links in the guides → site-relative
           sed -i -e 's|](../case/Fastener_Spec.pdf)|](Fastener_Spec.pdf)|g' -e 's|](../case/BOM.csv)|](https://github.com/${{ github.repository }}/blob/main/case/BOM.csv)|g' -e 's|](../case/)|](case.md)|g' -e 's|](../case/README.md)|](case.md)|g' -e 's|](../README.md)|](index.md)|g' docs/BUILD.md docs/GETTING_STARTED.md
