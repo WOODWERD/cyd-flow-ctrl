@@ -2,7 +2,7 @@
 
 Three printed parts, four screws, four inserts. The step-by-step build (buying the board, inserts, assembly, with pictures) is in [`../docs/BUILD.md`](../docs/BUILD.md); the parts list as a spreadsheet is [`BOM.csv`](BOM.csv). Only the USB-C port is exposed; the light sensor gets a
 clear light pipe so the firmware's ambient-light features still work behind a closed lid. Designed in
-Fusion 360 by WOODWERD LLC; STL for printing, STEP if you want to modify it. This is housing **v2**, printed and test-fitted on a USB-C board.
+Fusion 360 by WOODWERD LLC; STL for printing, STEP if you want to modify it. This is housing **v2** — printed, test-fitted on a USB-C board, and the released design.
 
 ![Case](../docs/case_iso.png)
 

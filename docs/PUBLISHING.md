@@ -1,6 +1,6 @@
 # Publishing checklist
 
-_Status: housing v2 printed and test-fitted — works. One more housing revision planned before the public release; re-export `case/*.stl|step` and the renders from Fusion after it, then follow the steps below._
+_Status: firmware v0.9 in daily use; housing v2 printed, test-fitted and released as-is. Any later housing change: re-export `case/*.stl|step` and the renders from Fusion, rerun `tools/make_guide.py`, push._
 
 This folder is a ready-to-push GitHub repository. Steps, in order.
 
