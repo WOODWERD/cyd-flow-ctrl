@@ -1,0 +1,16 @@
+{
+  "name": "Flow Ctrl",
+  "version": "0.9",
+  "new_install_prompt_erase": true,
+  "builds": [
+    {
+      "chipFamily": "ESP32",
+      "parts": [
+        {
+          "path": "flow-ctrl-v0.9-cyd2usb.bin",
+          "offset": 0
+        }
+      ]
+    }
+  ]
+}

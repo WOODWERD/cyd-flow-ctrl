@@ -1,0 +1,41 @@
+name: Docs site
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency: { group: pages, cancel-in-progress: true }
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install mkdocs-material
+      # the docs site reuses the repo-level files: README → Home, case/ → The case, notices
+      - run: |
+          cp README.md docs/index.md
+          sed -e 's|](docs/|](|g' -e 's|](case/README.md)|](case.md)|g' -e 's|](THIRD_PARTY_NOTICES.md)|](notices.md)|g' -i docs/index.md
+          cp case/README.md docs/case.md && sed -e 's|](../docs/|](|g' -e 's|](BOM.csv)|](https://github.com/${{ github.repository }}/blob/main/case/BOM.csv)|g' -e 's|](Fastener_Spec.pdf)|](Fastener_Spec.pdf)|g' -i docs/case.md
+          cp case/Fastener_Spec.pdf docs/Fastener_Spec.pdf
+          cp THIRD_PARTY_NOTICES.md docs/notices.md && printf '\n\n## License\n\n```\n' >> docs/notices.md && cat LICENSE >> docs/notices.md && printf '\n```\n' >> docs/notices.md
+          cp release/*.bin docs/flash/
+          # repo-relative links in the guides → site-relative
+          sed -i -e 's|](../case/Fastener_Spec.pdf)|](Fastener_Spec.pdf)|g' -e 's|](../case/BOM.csv)|](https://github.com/${{ github.repository }}/blob/main/case/BOM.csv)|g' -e 's|](../case/)|](case.md)|g' -e 's|](../case/README.md)|](case.md)|g' -e 's|](../README.md)|](index.md)|g' docs/BUILD.md docs/GETTING_STARTED.md
+          sed -i "s|REPLACE-ME|${{ github.repository_owner }}|g" mkdocs.yml
+      - run: mkdocs build --strict
+      - uses: actions/configure-pages@v5
+        with: { enablement: true }
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: site }
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: { name: github-pages, url: "${{ steps.deployment.outputs.page_url }}" }
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

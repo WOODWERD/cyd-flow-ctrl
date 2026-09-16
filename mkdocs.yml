@@ -1,0 +1,46 @@
+site_name: Flow Ctrl
+site_description: A push-to-talk / hands-free button for Wispr Flow on the ESP32 Cheap Yellow Display, with a printed case.
+site_url: https://WOODWERD.github.io/cyd-flow-ctrl/
+repo_url: https://github.com/WOODWERD/cyd-flow-ctrl
+repo_name: cyd-flow-ctrl
+edit_uri: edit/main/docs/
+copyright: "© 2026 WOODWERD LLC · MIT · Unofficial, not affiliated with Wispr"
+docs_dir: docs
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: green
+      toggle: { icon: material/brightness-4, name: Light mode }
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: black
+      accent: green
+      toggle: { icon: material/brightness-7, name: Dark mode }
+  features:
+    - navigation.sections
+    - navigation.footer
+    - content.code.copy
+    - search.suggest
+  font:
+    text: Inter
+    code: IBM Plex Mono
+nav:
+  - Home: index.md
+  - Build it: BUILD.md
+  - Getting started: GETTING_STARTED.md
+  - The case: case.md
+  - Flash it: flash/index.md
+  - Firmware & code: firmware.md
+  - Publishing: PUBLISHING.md
+  - Notices & license: notices.md
+markdown_extensions:
+  - admonition
+  - tables
+  - attr_list
+  - toc:
+      permalink: true
+plugins:
+  - search

@@ -1,0 +1,10 @@
+Item,Qty,Part,Specification,Notes
+1,1,Cheap Yellow Display board,"ESP32-2432S028R, 2.8in 320x240 resistive touch, USB-C (2-USB / CYD2USB) variant","Must be the version with a USB-C port; the case only exposes USB-C"
+2,1,USB-C cable (data),"USB-C to USB-A recommended","Some CYD boards lack CC resistors; C-to-C into a Mac C port may not power up"
+3,4,Flat-head screw,"M3 x 14 mm, 90 deg countersunk, hex socket, DIN 7991 / ISO 10642","Length includes the head. Do not use M3 x 16. 2 mm hex key"
+4,4,Heat-set threaded insert,"M3, brass, knurled, 4.0 mm long, OD 4.0-4.2 mm","The M3 x L4 kit size; Voron M3x5x4 also fits. Not the 5.7 mm ones"
+5,1,Printed part: Base,"CYD_FlowCtrl_Base.stl, PETG, 0.2 mm, 3-4 perimeters, no supports","Print open side up"
+6,1,Printed part: Lid,"CYD_FlowCtrl_Lid.stl, PETG, 0.2 mm, 3-4 perimeters, no supports","Print face down"
+7,1,Printed part: Light pipe,"CYD_FlowCtrl_LightPipe.stl, clear filament, 100% infill","Print flange down"
+8,1,Tool: soldering iron,"With an M3 insert tip, or a clean conical tip","~230 C for PETG, ~200 C for PLA"
+9,1,Tool: hex key,"2 mm","For the four screws"

@@ -1,0 +1,12 @@
+.pio/
+.vscode/
+*.pyc
+__pycache__/
+.DS_Store
+docs/flash/*.bin
+docs/index.md
+docs/case.md
+docs/notices.md
+docs/Fastener_Spec.pdf
+site/
+_old/
