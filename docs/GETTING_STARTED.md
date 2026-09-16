@@ -13,16 +13,17 @@ then what each button is for.
 
 **Flash the firmware.** Plug the board in over USB-C and either use the web flasher in Chrome
 ([esptool-js](https://espressif.github.io/esptool-js/): 460800 baud, address `0x0`,
-file `release/flow-ctrl-v0.9.4-cyd2usb-mac.bin`) or, from a terminal:
+file `release/flow-ctrl-v0.9.5-cyd2usb-mac.bin`) or, from a terminal:
 
 ```
 pip install esptool
-esptool.py --chip esp32 --port /dev/cu.usbserial-XXXX --baud 460800 write_flash 0x0 flow-ctrl-v0.9.4-cyd2usb-mac.bin
+esptool.py --chip esp32 --port /dev/cu.usbserial-XXXX --baud 460800 write_flash 0x0 flow-ctrl-v0.9.5-cyd2usb-mac.bin
 ```
 
-The screen shows "Flow Ctrl · v0.9.4 · Mac" with the WOODWERD badge and the push-to-talk chord for four seconds, then comes up with an amber dot and
+The screen shows "Flow Ctrl · v0.9.5 · Mac" with the WOODWERD badge and the push-to-talk chord for four seconds, then comes up with an amber dot and
 "Pairing…". (Long-press the **Flow Ctrl** title in the top-left corner at any time to see that again,
-with the chord it sends and its Bluetooth address. Tap anywhere to close.)
+with the chord it sends and its Bluetooth address. Tap anywhere to close. The **Forget pairing**
+button there — two taps — is the fix if the Mac and the board ever disagree about the pairing.)
 
 **Pair it.** System Settings → Bluetooth → **Flow Ctrl** → Connect. The dot turns green, the title
 reads "Flow Ctrl", and the buttons wake up. The Mac remembers it; from now on it reconnects on its own
@@ -36,7 +37,7 @@ chord, the firmware's chord is a build flag — see the README.)
 two custom transforms and give them the shortcuts **Opt + 3** and **Opt + 4**. Suggested prompts are
 in the README. Prompt Engineer is built in and needs nothing.
 
-**On a Windows PC instead.** Flash `flow-ctrl-v0.9.4-cyd2usb-win.bin` (same board; the screen says
+**On a Windows PC instead.** Flash `flow-ctrl-v0.9.5-cyd2usb-win.bin` (same board; the screen says
 Alt/Ctrl instead of Opt/Cmd and *Select all* sends `Ctrl+A`). Pair in Settings → Bluetooth → Add
 device. In Wispr Flow for Windows set push-to-talk to **Ctrl + Alt + T** — that is exactly what the
 board's chord becomes on Windows. Check what the Windows app assigns to Transforms before relying on the
@@ -77,7 +78,9 @@ Tap the hand and the row re-arranges itself. Hold-to-talk slides off the screen 
 mid-session), Send slides into its place, and a large coral **STOP** fills the rest of the row. The
 status line counts the session up.
 
-- Talk. Pause. Think. Nothing times out on the button's side.
+- Talk. Pause. Think. Nothing times out on the button's side. While the session runs, Wispr keeps
+  the words in its own bar at the bottom of the screen — nothing lands in your document until you
+  stop. That is Wispr's hands-free design, not a fault.
 - **STOP** ends the session; Wispr transcribes and pastes everything you said as one block. The row
   slides back to normal.
 - **Discard** (the trash) cancels the session without pasting. After it has pasted, the trash becomes *undo* instead.
@@ -124,7 +127,8 @@ Claude receives is better than what you said.
 | Symptom | Likely cause |
 |---|---|
 | Amber dot, "Pairing…" | Not connected. Pair in Bluetooth settings; if it was paired before, toggle Bluetooth on the Mac. |
-| Keeps dropping back to "Pairing…" every minute or two | Firmware older than v0.9.4. Reflash — see [Firmware & code](firmware.md#notes-for-anyone-adapting-it) for what changed. |
+| "Remove Flow Ctrl on the computer, then add it again" | The board and the Mac hold different pairing keys (a flash with *erase* does this). The board has already dropped its copy; remove Flow Ctrl in the Mac's Bluetooth list and pair once more. You can also trigger this yourself: About page → **Forget pairing** (tap twice). |
+| Keeps dropping back to "Pairing…" every minute or two | Firmware older than v0.9.5. Reflash — see [Firmware & code](firmware.md#notes-for-anyone-adapting-it) for what changed. |
 | Green dot, but nothing happens | Wispr's push-to-talk shortcut is not `Ctrl+Opt+T`, or Wispr is not running. |
 | Works everywhere except Terminal / a password field | macOS *Secure Keyboard Entry* blocks Wispr there for every keyboard. Not a Flow Ctrl problem. |
 | Hands-free starts but a tap of STOP does not paste | Wispr missed the double-tap that starts the lock. Try again; if it is consistent, the tap gap is a constant in `src/main.cpp`. |

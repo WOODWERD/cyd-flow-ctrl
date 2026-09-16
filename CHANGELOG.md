@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.9.5 — 2026-09-16
+- **Pairing recovery.** If the link fails at the encryption step twice (the computer's key no longer
+  matches the board's — a flash with *erase* does this), the board drops its bonds and the status line
+  says to remove and re-add it. **Forget pairing** on the About page (two taps) does the same on
+  demand. The Flash page no longer offers to erase, so a normal reflash keeps the bond.
+- Bench test rewritten where it was unclear: *Resync* now says what it is for; *Hands-free* says
+  what Wispr does with the words while a session runs.
+
 ## v0.9.4 — 2026-09-16
 - **Windows build** (`cyd2usb-win` env, `flow-ctrl-v0.9.4-cyd2usb-win.bin`): Alt/Ctrl names on screen,
   *Select all* sends `Ctrl+A` (the Mac build's `Cmd+A` becomes `Win+A` on Windows and opens the Action

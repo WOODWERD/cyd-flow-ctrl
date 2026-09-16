@@ -44,12 +44,12 @@ guess. If they get out of sync, long-press STOP.
 
 ## Quick start (no toolchain)
 
-1. **Flash.** Grab `release/flow-ctrl-v0.9.4-cyd2usb-mac.bin` (USB-C / 2-USB board, Mac) —
+1. **Flash.** Grab `release/flow-ctrl-v0.9.5-cyd2usb-mac.bin` (USB-C / 2-USB board, Mac) —
    or `…-cyd2usb-win.bin` for a Windows PC — or build the `cyd` env for the original micro-USB board. Either:
    - [ESP Web Tools / esptool-js](https://espressif.github.io/esptool-js/) in Chrome or Edge — 460800 baud, address `0x0`, or
    - `pip install esptool` then
      ```
-     esptool.py --chip esp32 --port /dev/cu.usbserial-XXXX --baud 460800 write_flash 0x0 flow-ctrl-v0.9.4-cyd2usb-mac.bin
+     esptool.py --chip esp32 --port /dev/cu.usbserial-XXXX --baud 460800 write_flash 0x0 flow-ctrl-v0.9.5-cyd2usb-mac.bin
      ```
    (Hold BOOT while plugging in if the port doesn't show up. 921600 baud is unreliable on the CH340.)
 2. **Pair.** System Settings → Bluetooth → **"Flow Ctrl"**. The top-left dot turns green and the buttons
@@ -63,6 +63,8 @@ guess. If they get out of sync, long-press STOP.
 image so the screen says Alt/Ctrl and *Select all* sends `Ctrl+A` rather than `Win+A`. Note the board
 bonds to whichever computer pairs it; to move it between a Mac and a PC, forget it on the one you're
 leaving.
+
+**Pairing gone weird?** About page → **Forget pairing** (tap twice), then remove Flow Ctrl on the computer and add it again. The board also does this by itself if the computer's key stops matching.
 
 **Which firmware is on it?** The version and chord show for four seconds at power-up; long-press the **Flow Ctrl**
 title (top-left) any time for the About page — version, build, chord, Bluetooth address.

@@ -190,6 +190,22 @@ static void splash_timer(lv_timer_t* t) {
   lv_anim_start(&a);
 }
 
+static void render_state();
+static lv_obj_t* forgetBtn = nullptr; static lv_obj_t* forgetLbl = nullptr; static bool forgetArmed = false;
+static void forget_event(lv_event_t* e) {
+  if (lv_event_get_code(e) != LV_EVENT_CLICKED) return;
+  if (!forgetArmed) {
+    forgetArmed = true;
+    lv_label_set_text(forgetLbl, "TAP AGAIN TO FORGET");
+    lv_obj_set_style_bg_color(forgetBtn, C(C_ACCENT), 0);
+    lv_obj_set_style_text_color(forgetLbl, C(C_ACCENT_TEXT), 0);
+    return;
+  }
+  BleKbd::forgetPairing();
+  overlay_close(nullptr);
+  show_toast("Pairing forgotten - remove it on the computer, add again", 3500);
+  render_state();
+}
 static void show_about(bool splash) {
   if (overlay) return;
   overlay = box(lv_layer_top(), 0, 0, SCREEN_W, SCREEN_H, C_BG, 0);
@@ -216,9 +232,9 @@ static void show_about(bool splash) {
     return;
   }
   lv_obj_t* t = label(overlay, "Flow Ctrl", F_TITLE, C_TEXT);
-  lv_obj_align(t, LV_ALIGN_TOP_MID, 0, 22);
-  lv_obj_t* v = label(overlay, ver + 13, F_MONO, C_TEXT_2);     // "v0.9.4  ·  Mac"
-  lv_obj_align(v, LV_ALIGN_TOP_MID, 0, 52);
+  lv_obj_align(t, LV_ALIGN_TOP_LEFT, 24, 20);
+  lv_obj_t* v = label(overlay, ver + 13, F_MONO, C_TEXT_2);     // "v0.9.5  ·  Mac"
+  lv_obj_align(v, LV_ALIGN_TOP_LEFT, 24, 50);
   static char lines[240];
   snprintf(lines, sizeof(lines),
            "Push to talk   %s\nHands-free     double tap\nTrash          cancel / undo\nBluetooth      " BLE_NAME "\nAddress        %s\nLink           %s",
@@ -232,6 +248,21 @@ static void show_about(bool splash) {
   lv_obj_align(footL, LV_ALIGN_BOTTOM_LEFT, 24, -12);
   lv_obj_t* footR = label(overlay, "tap to close", F_SMALL, C_TEXT_3);
   lv_obj_align(footR, LV_ALIGN_BOTTOM_RIGHT, -24, -12);
+  // Forget pairing: two taps, so a stray finger can't do it. Fixes a board/computer bond mismatch
+  // without a reflash.
+  forgetArmed = false;
+  forgetBtn = lv_button_create(overlay);
+  lv_obj_remove_style_all(forgetBtn);
+  lv_obj_set_size(forgetBtn, 128, 30);
+  lv_obj_align(forgetBtn, LV_ALIGN_TOP_RIGHT, -20, 22);
+  lv_obj_set_style_bg_color(forgetBtn, C(C_SURFACE_HI), 0);
+  lv_obj_set_style_bg_opa(forgetBtn, LV_OPA_COVER, 0);
+  lv_obj_set_style_radius(forgetBtn, 15, 0);
+  lv_obj_set_style_border_width(forgetBtn, 1, 0);
+  lv_obj_set_style_border_color(forgetBtn, C(C_BORDER), 0);
+  forgetLbl = label(forgetBtn, "FORGET PAIRING", &lv_font_montserrat_14, C_TEXT_2);
+  lv_obj_center(forgetLbl);
+  lv_obj_add_event_cb(forgetBtn, forget_event, LV_EVENT_CLICKED, nullptr);
 }
 static void title_event(lv_event_t* e) {
   if (lv_event_get_code(e) == LV_EVENT_LONG_PRESSED) show_about(false);
@@ -311,7 +342,8 @@ static void render_state() {
   // status line under the pill
   static char buf[48];
   if (!on) {
-    lv_label_set_text(lblStatus, "Add \"Flow Ctrl\" in Bluetooth settings");
+    lv_label_set_text(lblStatus, BleKbd::needsRepair() ? "Remove \"Flow Ctrl\" on the computer, then add it again"
+                                                       : "Add \"Flow Ctrl\" in Bluetooth settings");
   } else if (cap == CAP_PTT) {
     lv_label_set_text(lblStatus, "Listening — release to paste");
   } else if (cap == CAP_HANDSFREE) {

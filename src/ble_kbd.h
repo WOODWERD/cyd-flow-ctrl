@@ -25,6 +25,12 @@ namespace BleKbd {
   bool connected();
   // Own Bluetooth address as text (for the About page)
   const char* address();
+  // Drop every stored bond and re-advertise. The computer keeps its copy, so the user then removes
+  // "Flow Ctrl" there and pairs again. Also done automatically after repeated encryption failures.
+  void forgetPairing();
+  // True from a forget (manual or automatic) until a new encrypted link is up: the screen tells
+  // the user to remove the device on the computer and pair again.
+  bool needsRepair();
   // Call from loop(): sends the deferred connection-parameter request after a connect.
   void tick();
   // Hold / release a chord. keys = up to 6 usage codes (0 = none).

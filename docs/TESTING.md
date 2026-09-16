@@ -7,13 +7,13 @@ tagging a version; if one fails, it is not a release.
 | # | Step | Pass looks like |
 |---|---|---|
 | 1 | **Boot.** Power-cycle the board. | WOODWERD badge appears at once with no half-drawn frame, then "Flow Ctrl · vX.Y.Z · Mac" and the chord (`Ctrl + Opt + T`). Fades after ~4 s to "Pairing…". |
-| 2 | **Reconnect.** Do nothing. | Green dot within ~15 s. No re-pairing needed. |
+| 2 | **Reconnect.** Do nothing. | Green dot within ~15 s. No re-pairing needed. If instead the status says "Remove Flow Ctrl on the computer, then add it again", do that once — the board found the Mac's key no longer matched — and note it. |
 | 3 | **About.** Long-press the *Flow Ctrl* title. Then tap anywhere. | Page shows the version you flashed, the build, the chord, the address and "connected". Closes on tap. A short tap on the title does nothing. |
 | 4 | **Hold.** Hold, say one sentence, release. Tap **SEND**. | Text pastes at the cursor after release. Return is sent. |
 | 5 | **Undo.** Hold, say one sentence, release, wait for the paste, tap the **trash**. | The pasted sentence disappears. Toast says "Undo". |
-| 6 | **Hands-free.** Tap the hand. Say two sentences with a long pause. Tap **STOP**. | HOLD slides off, coral STOP fills the row, status counts up. One paste containing both sentences. Row slides back. |
+| 6 | **Hands-free.** Tap the hand. Say two sentences with a long pause. Watch Wispr's bar collect the words (that is normal — nothing pastes until you stop). Tap **STOP**. | HOLD slides off, coral STOP fills the row, status counts up. On STOP, one paste containing both sentences lands in the document. Row slides back. |
 | 7 | **Cancel.** Tap the hand, say something, tap the **trash**. | Nothing pastes. Toast "Cancelled — nothing sent". Row resets. |
-| 8 | **Resync.** Tap the hand, then stop Wispr from the Mac (Esc on the keyboard). Long-press **STOP**. | Row resets, toast "Reset — nothing sent", nothing extra pasted. |
+| 8 | **Resync.** *Purpose: the board cannot see what Wispr does, so if you end a session from the Mac the button is left showing STOP; this checks the way out.* Tap the hand, say a word, then press **Esc on the Mac's keyboard** so Wispr cancels. The board still shows STOP — expected. Now **long-press STOP** on the board. | The row goes back to normal with the toast "Reset — nothing sent", and nothing extra is pasted. |
 | 9 | **Transform.** Dictate into the editor. Slide to Transform. **Select all**, **Prompt Engineer**, **View diff**. Slide back. | Text highlights; Wispr rewrites it; the diff view opens. The waveform circle and trash stay visible on both pages. |
 | 10 | **Page safety.** On Dictate, hold with a heavy thumb near the top of HOLD TO TALK. | The page never changes. The lozenge only responds to a tap on itself. |
 | 11 | **Link.** Leave it for 10 minutes. | Dot stays green. (Serial, if you are watching: no `disconnected` lines.) |

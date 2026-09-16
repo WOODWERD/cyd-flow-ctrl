@@ -50,6 +50,9 @@ static uint16_t connHandle = 0;
 static uint16_t curLatency = 0;
 static uint16_t curTimeout10ms = 0;    // last reported supervision timeout, 10 ms units
 static NimBLEServer* srv = nullptr;
+static bool     repairFlag = false;
+static uint8_t  authFails = 0;         // consecutive encryption failures on reconnect
+static const uint8_t AUTH_FAILS_MAX = 2;
 static const char* reasonText(int r) {
   switch (r) {
     case 0x208: return "supervision timeout (link went quiet)";
@@ -58,6 +61,9 @@ static const char* reasonText(int r) {
     case 0x23E: return "connection failed to establish";
     case 0x22E: return "LMP response timeout";
     case 0x228: return "instant passed (missed a channel-map/param update)";
+    case 0x205: return "authentication failure (keys don't match)";
+    case 0x206: return "PIN or key missing (host has no bond for us)";
+    case 0x23D: return "MIC failure (encryption keys don't match)";
     default: return "";
   }
 }
@@ -84,6 +90,17 @@ class ServerCB : public NimBLEServerCallbacks {
   void onDisconnect(NimBLEServer*, NimBLEConnInfo&, int reason) override {
     isConnected = false;
     paramReqAt = 0;
+    // A bond mismatch (board flashed with erase, or the computer re-paired elsewhere) shows up as
+    // the link dying at the encryption step. After a couple of those, throw our stale keys away so
+    // the next attempt is a clean pairing instead of an endless loop.
+    if (!encrypted && (reason == 0x205 || reason == 0x206 || reason == 0x23D)) {
+      if (++authFails >= AUTH_FAILS_MAX) {
+        Serial.printf("[%8lu] [ble] bond mismatch x%u - clearing bonds; remove Flow Ctrl on the computer and pair again\n",
+                      (unsigned long)millis(), authFails);
+        NimBLEDevice::deleteAllBonds();
+        repairFlag = true; authFails = 0;
+      }
+    }
     encrypted = false;
     Serial.printf("[%8lu] [ble] disconnected 0x%03X %s after %lus - advertising\n", (unsigned long)millis(), reason,
                   reasonText(reason), (unsigned long)((millis() - connectedAt) / 1000));
@@ -92,6 +109,7 @@ class ServerCB : public NimBLEServerCallbacks {
   void onAuthenticationComplete(NimBLEConnInfo& info) override {
     Serial.printf("[%8lu] [ble] auth complete, bonded=%d encrypted=%d\n", (unsigned long)millis(), info.isBonded(), info.isEncrypted());
     encrypted = info.isEncrypted();
+    if (encrypted) { authFails = 0; repairFlag = false; }
     if (encrypted && !paramReqAt) paramReqAt = millis() + PARAM_REQ_DELAY_MS;
   }
   void onConnParamsUpdate(NimBLEConnInfo& info) override {
@@ -142,6 +160,14 @@ void BleKbd::begin(const char* deviceName) {
 }
 
 bool BleKbd::connected() { return isConnected; }
+void BleKbd::forgetPairing() {
+  Serial.printf("[%8lu] [ble] forget pairing: deleting %d bond(s)\n", (unsigned long)millis(), NimBLEDevice::getNumBonds());
+  NimBLEDevice::deleteAllBonds();
+  repairFlag = true; authFails = 0;
+  if (isConnected && srv) srv->disconnect(connHandle);   // onDisconnect restarts advertising
+  else NimBLEDevice::startAdvertising();
+}
+bool BleKbd::needsRepair() { return repairFlag; }
 const char* BleKbd::address() {
   static std::string a;
   a = NimBLEDevice::getAddress().toString();
