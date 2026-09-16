@@ -1,6 +1,6 @@
 # Publishing checklist
 
-_Status: firmware v0.9 in daily use; housing v2 printed, test-fitted and released as-is. Any later housing change: re-export `case/*.stl|step` and the renders from Fusion, rerun `tools/make_guide.py`, push._
+_Status: firmware v0.9.3 in daily use (v0.9 + the Bluetooth link fix); housing v2 printed, test-fitted and released as-is. Any later housing change: re-export `case/*.stl|step` and the renders from Fusion, rerun `tools/make_guide.py`, push._
 
 This folder is a ready-to-push GitHub repository. Steps, in order.
 
@@ -19,7 +19,7 @@ Repo description: *Push-to-talk / hands-free button for Wispr Flow on the ESP32 
 Topics worth adding: `esp32`, `cheap-yellow-display`, `cyd`, `wispr-flow`, `ble-hid`, `lvgl`, `3d-printing`.
 
 ## 2. Make a release
-Tag `v0.9` and attach `release/flow-ctrl-v0.9-cyd2usb.bin` (and a `cyd` build if you make one) so people
+Tag the version (currently `v0.9.3`) and attach `release/flow-ctrl-v0.9.3-cyd2usb.bin` (and a `cyd` build if you make one) so people
 can flash without cloning. Keep the file in `release/` too — the README links to it.
 
 ## 3. Add it to the CYD project list
