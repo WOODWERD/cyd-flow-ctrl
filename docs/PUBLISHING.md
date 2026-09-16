@@ -4,16 +4,19 @@ _Status: housing v2 printed and test-fitted — works. One more housing revision
 
 This folder is a ready-to-push GitHub repository. Steps, in order.
 
-## 1. Create the repo and push
-```
-cd cyd-flow-ctrl
-git init -b main
-git add .
-git commit -m "Flow Ctrl v0.9: firmware, case, docs"
-gh repo create cyd-flow-ctrl --public --source=. --push     # or create it on github.com and push
-```
-Suggested repo description: *Push-to-talk / hands-free button for Wispr Flow on the ESP32 Cheap Yellow Display, with a printed case.*
-Topics: `esp32`, `cheap-yellow-display`, `cyd`, `wispr-flow`, `ble-hid`, `lvgl`, `3d-printing`.
+## 1. The repo and the docs site
+- Repo: **https://github.com/WOODWERD/cyd-flow-ctrl** (public; created 2026-09-16).
+- Docs site: **https://woodwerd.github.io/cyd-flow-ctrl/** — built from `docs/` by `.github/workflows/pages.yml`
+  (MkDocs Material) on every push to `main`. The workflow reuses the README as the home page, `case/README.md`
+  as "The case" and the notices file, so there is one copy of every document. `docs/flash/` is an ESP Web Tools
+  page that flashes `release/*.bin` from Chrome in one click.
+- Settings → Pages → Source is **GitHub Actions** (set by hand 2026-09-16 — GitHub only allows it once the repo
+  has content, and the workflow token can't set it).
+- Day to day: edit, commit and push with GitHub Desktop (the folder is added there) or
+  `git push` from a terminal. Each push rebuilds the site in about a minute; check the Actions tab if it doesn't.
+
+Repo description: *Push-to-talk / hands-free button for Wispr Flow on the ESP32 Cheap Yellow Display, with a printed case.*
+Topics worth adding: `esp32`, `cheap-yellow-display`, `cyd`, `wispr-flow`, `ble-hid`, `lvgl`, `3d-printing`.
 
 ## 2. Make a release
 Tag `v0.9` and attach `release/flow-ctrl-v0.9-cyd2usb.bin` (and a `cyd` build if you make one) so people
