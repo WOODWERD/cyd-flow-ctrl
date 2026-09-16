@@ -29,7 +29,6 @@ jobs:
           sed -i "s|REPLACE-ME|${{ github.repository_owner }}|g" mkdocs.yml
       - run: mkdocs build --strict
       - uses: actions/configure-pages@v5
-        with: { enablement: true }
       - uses: actions/upload-pages-artifact@v3
         with: { path: site }
   deploy:
