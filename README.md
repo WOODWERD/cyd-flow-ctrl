@@ -7,8 +7,8 @@ ESP32-2432S028R "Cheap Yellow Display" (CYD). The board pairs with your Mac as a
 keyboard** and sends the same keyboard shortcut you already use — so there is nothing to install on
 the computer, and nothing about your Wispr setup changes.
 
-- **Hold to talk** — press and hold the big button, speak, let go: Wispr transcribes and pastes.
-- **Hands-free** — tap once to lock in, talk for as long as you like, tap **STOP** to paste it all.
+- **Hold to talk** — press and hold the big black bar, speak, let go: Wispr transcribes and pastes.
+- **Hands-free** — tap the red hand once to lock in, talk for as long as you like, tap the bar to paste it all.
 - **Send** — a Return key, so a dictated Claude prompt or chat message goes without touching the keyboard.
 - **Discard** — the trash: cancels a running hands-free session (`Esc`), or undoes the last paste (`Cmd+Z`) after a hold.
 - **Transforms** — a second page fires Wispr's AI rewrites (Prompt Engineer, plus your own) on selected text.
@@ -31,26 +31,29 @@ Wispr's *Push to talk* shortcut to that (Settings → General → Shortcuts), or
 | On the screen | What the CYD sends | What Wispr does |
 |---|---|---|
 | **HOLD TO TALK** (press and hold) | chord held down for as long as your finger is | push-to-talk; release = transcribe & paste |
-| **HANDS-FREE** (slashed-hand key, tap) | chord tapped twice, 120 ms apart | Wispr's "double-tap push-to-talk to lock" gesture → hands-free session |
-| **STOP** (tap, while hands-free) | chord tapped once | ends the session, pastes |
-| **STOP** (long-press) | nothing | resets the button's state only — use if you stopped Flow from the Mac |
+| **Hands-free** (red hand, top row, tap) | chord tapped twice, 120 ms apart | Wispr's "double-tap push-to-talk to lock" gesture → hands-free session |
+| **Stop** (tap the bar, or the hand again, while hands-free) | chord tapped once | ends the session, pastes |
+| **Hand** (long-press, while hands-free) | nothing | resets the button's state only — use if you stopped Flow from the Mac |
 | **SEND** | `Return` | sends what was just pasted — a Claude prompt, a chat message. Tap it once the words have landed |
 | **Discard** (trash, top row) — hands-free running | `Esc` | cancels the session, nothing pastes |
 | **Discard** — otherwise | `Cmd+Z` (`Ctrl+Z` on Windows) | undoes the last paste: removes what the hold just dictated |
 | **Page selector** (lozenge, top row) | nothing | slides between the Dictate and Transform pages |
 
 There is no channel from Wispr back to the button, so the on-screen state is the button's best
-guess. If they get out of sync, long-press STOP.
+guess. If they get out of sync, long-press the red hand.
 
 ## Quick start (no toolchain)
 
-1. **Flash.** Grab `release/flow-ctrl-v0.9.5-cyd2usb-mac.bin` (USB-C / 2-USB board, Mac) —
+1. **Flash.** Easiest: the [Flash page](https://woodwerd.github.io/cyd-flow-ctrl/flash/) in Chrome. Or grab
+   `release/flow-ctrl-v0.9.6-cyd2usb-mac.bin` (USB-C / 2-USB board, Mac) —
    or `…-cyd2usb-win.bin` for a Windows PC — or build the `cyd` env for the original micro-USB board. Either:
    - [ESP Web Tools / esptool-js](https://espressif.github.io/esptool-js/) in Chrome or Edge — 460800 baud, address `0x0`, or
    - `pip install esptool` then
      ```
-     esptool.py --chip esp32 --port /dev/cu.usbserial-XXXX --baud 460800 write_flash 0x0 flow-ctrl-v0.9.5-cyd2usb-mac.bin
+     esptool.py --chip esp32 --port /dev/cu.usbserial-XXXX --baud 460800 write_flash 0x0 flow-ctrl-v0.9.6-cyd2usb-mac.bin
      ```
+   **Updating a board that's already paired?** Flash `…-update.bin` at `0x10000` instead. The full image
+   at `0x0` wipes the board's Bluetooth pairing and you'd have to pair again.
    (Hold BOOT while plugging in if the port doesn't show up. 921600 baud is unreliable on the CH340.)
 2. **Pair.** System Settings → Bluetooth → **"Flow Ctrl"**. The top-left dot turns green and the buttons
    enable. The bond is remembered and reconnects on power-up.
@@ -74,7 +77,7 @@ Wispr's help article on it. It affects every keyboard, not just this one.
 
 ## Page 2 — Transforms
 
-The lozenge selector in the top row (talking head = Dictate, sparkles = Transform; a green knob slides to the active one) flips to a second page that fires Wispr's *Transforms* — AI rewrites
+The lozenge selector in the top row (talking head = Dictate, sparkles = Transform; a black knob slides to the active one) flips to a second page that fires Wispr's *Transforms* — AI rewrites
 of whatever text is selected on the Mac. Buttons come from the `XFORMS` table at the top of `main.cpp`;
 add a row, rebuild, and it appears in the next empty slot (four slots per page).
 
@@ -87,7 +90,7 @@ add a row, rebuild, and it appears in the next empty slot (four slots per page).
 | **View diff** | `Opt+O` | built in |
 
 The Claude flow: dictate into the prompt box → **Select all** → **PROMPT ENGINEER** → back to **DICTATE** → **SEND**.
-The top row — waveform circle, trash (Esc) and the page selector — is shared by both pages, so you can see a hands-free session running and discard it from either page. Switching is a tap, not a swipe, so a heavy finger on HOLD TO TALK can never turn into a page change.
+The top row — hands-free hand, trash and the page selector — is shared by both pages, so you can see a hands-free session running (the hand and the dot turn red) and stop or discard it from either page. Switching is a tap, not a swipe, so a heavy finger on HOLD TO TALK can never turn into a page change.
 
 ## Docs
 

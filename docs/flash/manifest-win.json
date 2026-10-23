@@ -1,14 +1,26 @@
 {
   "name": "Flow Ctrl (Windows)",
-  "version": "0.9.5",
+  "version": "0.9.6",
   "new_install_prompt_erase": false,
   "builds": [
     {
       "chipFamily": "ESP32",
       "parts": [
         {
-          "path": "flow-ctrl-v0.9.5-cyd2usb-win.bin",
-          "offset": 0
+          "path": "flow-ctrl-v0.9.6-bootloader.bin",
+          "offset": 4096
+        },
+        {
+          "path": "flow-ctrl-v0.9.6-partitions.bin",
+          "offset": 32768
+        },
+        {
+          "path": "flow-ctrl-v0.9.6-boot_app0.bin",
+          "offset": 57344
+        },
+        {
+          "path": "flow-ctrl-v0.9.6-cyd2usb-win-update.bin",
+          "offset": 65536
         }
       ]
     }

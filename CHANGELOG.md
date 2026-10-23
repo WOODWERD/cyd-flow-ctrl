@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.9.6 — 2026-10-23
+- **New look, matched to Wispr Flow.** Warm off-white screen, black type, and one red accent kept
+  for live or destructive states. Build with `-DTHEME_DARK` for the previous dark colours.
+- **The talk button is the waveform.** HOLD TO TALK is now one big black pill with the waveform
+  inside (dots at rest, white bars while held, red bars during hands-free), like Wispr's Flow bar.
+  A ring shows around it while you hold.
+- **SEND** is one big button across the bottom.
+- **Hands-free** is a red chip in the top bar, beside the trash. It turns solid red while a session
+  runs; tap the talk pill (or the chip again) to stop and paste. The line under the pill shows the
+  elapsed time, and the trash chip turns into a red ✕ (cancel).
+- **Transform page:** 2 × 2 grid with Prompt Engineer in black, SELECT ALL and VIEW DIFF below.
+- **About page:** a key/value table; FORGET PAIRING is a red outline that fills red when armed.
+- **Splash:** WOODWERD badge in black, push-to-talk chord in red.
+- **Updates keep the pairing.** The Flash page now writes the bootloader, partition table and app at
+  their own addresses instead of one image from `0x0`, which used to blank the area holding the
+  Bluetooth pairing — every update meant removing and re-adding Flow Ctrl on the computer. Releases
+  also carry `…-update.bin` (app only, flash at `0x10000`) for esptool-js / ESP Ctrl.
+
 ## v0.9.5 — 2026-09-16
 - **Pairing recovery.** If the link fails at the encryption step twice (the computer's key no longer
   matches the board's — a flash with *erase* does this), the board drops its bonds and the status line

@@ -104,17 +104,16 @@ static bool wasConnected = false;
 static int blLevel = BL_FULL;
 
 // ---------------- widgets ----------------
-static lv_obj_t *dot, *lblTitle, *btnDiscard;
-static lv_obj_t *pill, *lblStatus;
-static lv_obj_t *btnPtt, *lblPtt, *micCap, *micCup, *micStem, *micBase;
-static lv_obj_t *btnHf, *lblHf, *icoHf;
-static lv_obj_t *btnSend, *lblSend, *lblSendSym;
+static lv_obj_t *dot, *lblTitle, *btnDiscard, *lblDiscard;
+static lv_obj_t *btnPtt, *lblStatus;          // the black pill IS the talk button
+static lv_obj_t *btnHf, *icoHf;
+static lv_obj_t *btnSend, *lblSend;
 static lv_obj_t *pageDictate, *pageXf, *segKnob, *tabDictate, *tabXf, *icoDictate, *icoXf;
 static int knobX[2];
 static int page = 0;
 static lv_obj_t *toast, *toastTxt;
 static uint32_t toastUntil = 0;
-#define N_BARS 7
+#define N_BARS 11
 static lv_obj_t* bars[N_BARS];
 static int barH[N_BARS];
 
@@ -197,14 +196,22 @@ static void forget_event(lv_event_t* e) {
   if (!forgetArmed) {
     forgetArmed = true;
     lv_label_set_text(forgetLbl, "TAP AGAIN TO FORGET");
-    lv_obj_set_style_bg_color(forgetBtn, C(C_ACCENT), 0);
+    lv_obj_set_style_bg_opa(forgetBtn, LV_OPA_COVER, 0);
     lv_obj_set_style_text_color(forgetLbl, C(C_ACCENT_TEXT), 0);
     return;
   }
   BleKbd::forgetPairing();
   overlay_close(nullptr);
-  show_toast("Pairing forgotten - remove it on the computer, add again", 3500);
+  show_toast("Pairing forgotten - re-add it on the computer", 3500);
   render_state();
+}
+// One About row: grey key on the left, value right-aligned, hairline under it.
+static void about_row(int y, const char* k, const char* v, bool mono, bool last) {
+  lv_obj_t* a = label(overlay, k, F_SMALL, C_TEXT_2);
+  lv_obj_set_pos(a, 16, y + 4);
+  lv_obj_t* b = label(overlay, v, mono ? F_MONO : F_SMALL, C_TEXT);
+  lv_obj_align(b, LV_ALIGN_TOP_RIGHT, -16, y + 4);
+  if (!last) box(overlay, 16, y + 25, SCREEN_W - 32, 1, C_BORDER, 0);
 }
 static void show_about(bool splash) {
   if (overlay) return;
@@ -212,11 +219,10 @@ static void show_about(bool splash) {
   lv_obj_add_flag(overlay, LV_OBJ_FLAG_CLICKABLE);
   if (!splash) lv_obj_add_event_cb(overlay, overlay_close, LV_EVENT_CLICKED, nullptr);
 
-  static char ver[40];
-  snprintf(ver, sizeof(ver), "Flow Ctrl  ·  v" FW_VERSION "  ·  " HOST_NAME);
-
   if (splash) {
     // badge logo, then the two things a new owner needs: which firmware, and which chord to set
+    static char ver[40];
+    snprintf(ver, sizeof(ver), "Flow Ctrl  ·  v" FW_VERSION "  ·  " HOST_NAME);
     lv_obj_t* logo = lv_image_create(overlay);
     lv_image_set_src(logo, &logo_woodwerd);
     lv_obj_set_style_image_recolor(logo, C(C_TEXT), 0);
@@ -225,44 +231,44 @@ static void show_about(bool splash) {
     lv_obj_t* v = label(overlay, ver, F_SMALL, C_TEXT_2);
     lv_obj_align(v, LV_ALIGN_TOP_MID, 0, 140);
     lv_obj_t* k = label(overlay, "PUSH TO TALK", F_SMALL, C_TEXT_3);
-    lv_obj_align(k, LV_ALIGN_TOP_MID, 0, 172);
-    lv_obj_t* c = label(overlay, PTT_LABEL, F_TITLE, C_TEXT);
-    lv_obj_align(c, LV_ALIGN_TOP_MID, 0, 192);
+    lv_obj_set_style_text_letter_space(k, 1, 0);
+    lv_obj_align(k, LV_ALIGN_TOP_MID, 0, 170);
+    lv_obj_t* c = label(overlay, PTT_LABEL, F_TITLE, C_ACCENT_INK);
+    lv_obj_align(c, LV_ALIGN_TOP_MID, 0, 190);
     lv_timer_create(splash_timer, SPLASH_MS, nullptr);
     return;
   }
-  lv_obj_t* t = label(overlay, "Flow Ctrl", F_TITLE, C_TEXT);
-  lv_obj_align(t, LV_ALIGN_TOP_LEFT, 24, 20);
-  lv_obj_t* v = label(overlay, ver + 13, F_MONO, C_TEXT_2);     // "v0.9.5  ·  Mac"
-  lv_obj_align(v, LV_ALIGN_TOP_LEFT, 24, 50);
-  static char lines[240];
-  snprintf(lines, sizeof(lines),
-           "Push to talk   %s\nHands-free     double tap\nTrash          cancel / undo\nBluetooth      " BLE_NAME "\nAddress        %s\nLink           %s",
-           PTT_LABEL, BleKbd::address(), BleKbd::connected() ? "connected" : "pairing");
-  lv_obj_t* body = label(overlay, lines, F_MONO, C_TEXT);
-  lv_obj_set_style_text_line_space(body, 6, 0);
-  lv_obj_align(body, LV_ALIGN_TOP_LEFT, 24, 84);
-  lv_obj_t* url = label(overlay, "github.com/WOODWERD/cyd-flow-ctrl", F_MONO, C_TEXT_2);
-  lv_obj_align(url, LV_ALIGN_TOP_LEFT, 24, 190);
-  lv_obj_t* footL = label(overlay, "WOODWERD LLC", F_SMALL, C_TEXT_3);
-  lv_obj_align(footL, LV_ALIGN_BOTTOM_LEFT, 24, -12);
-  lv_obj_t* footR = label(overlay, "tap to close", F_SMALL, C_TEXT_3);
-  lv_obj_align(footR, LV_ALIGN_BOTTOM_RIGHT, -24, -12);
-  // Forget pairing: two taps, so a stray finger can't do it. Fixes a board/computer bond mismatch
-  // without a reflash.
+
+  lv_obj_t* t = label(overlay, "About", F_TITLE, C_TEXT);
+  lv_obj_set_pos(t, 16, 14);
+  // Forget pairing: red outline, two taps, so a stray finger can't do it.
   forgetArmed = false;
   forgetBtn = lv_button_create(overlay);
   lv_obj_remove_style_all(forgetBtn);
-  lv_obj_set_size(forgetBtn, 128, 30);
-  lv_obj_align(forgetBtn, LV_ALIGN_TOP_RIGHT, -20, 22);
-  lv_obj_set_style_bg_color(forgetBtn, C(C_SURFACE_HI), 0);
-  lv_obj_set_style_bg_opa(forgetBtn, LV_OPA_COVER, 0);
-  lv_obj_set_style_radius(forgetBtn, 15, 0);
+  lv_obj_set_size(forgetBtn, 150, 32);
+  lv_obj_align(forgetBtn, LV_ALIGN_TOP_RIGHT, -12, 10);
+  lv_obj_set_style_bg_color(forgetBtn, C(C_ACCENT), 0);
+  lv_obj_set_style_bg_opa(forgetBtn, LV_OPA_TRANSP, 0);
+  lv_obj_set_style_radius(forgetBtn, 8, 0);
   lv_obj_set_style_border_width(forgetBtn, 1, 0);
-  lv_obj_set_style_border_color(forgetBtn, C(C_BORDER), 0);
-  forgetLbl = label(forgetBtn, "FORGET PAIRING", &lv_font_montserrat_14, C_TEXT_2);
+  lv_obj_set_style_border_color(forgetBtn, C(C_ACCENT), 0);
+  forgetLbl = label(forgetBtn, "FORGET PAIRING", F_SMALL, C_ACCENT_INK);
   lv_obj_center(forgetLbl);
   lv_obj_add_event_cb(forgetBtn, forget_event, LV_EVENT_CLICKED, nullptr);
+
+  static char link[40];
+  snprintf(link, sizeof link, BLE_NAME "  ·  %s", BleKbd::connected() ? "connected" : "pairing");
+  int y = 50;
+  about_row(y, "Version", "v" FW_VERSION "  ·  " HOST_NAME, true, false);  y += 26;
+  about_row(y, "Push to talk", PTT_LABEL, true, false);                  y += 26;
+  about_row(y, "Hands-free", "double tap, tap to stop", false, false);   y += 26;
+  about_row(y, "Trash", "Esc while live, undo after", false, false);     y += 26;
+  about_row(y, "Bluetooth", link, false, false);                         y += 26;
+  about_row(y, "Address", BleKbd::address(), true, true);
+  lv_obj_t* footL = label(overlay, "WOODWERD LLC", F_SMALL, C_TEXT_3);
+  lv_obj_align(footL, LV_ALIGN_BOTTOM_LEFT, 16, -10);
+  lv_obj_t* footR = label(overlay, "tap anywhere to close", F_SMALL, C_TEXT_3);
+  lv_obj_align(footR, LV_ALIGN_BOTTOM_RIGHT, -16, -10);
 }
 static void title_event(lv_event_t* e) {
   if (lv_event_get_code(e) == LV_EVENT_LONG_PRESSED) show_about(false);
@@ -276,6 +282,7 @@ static lv_obj_t* box(lv_obj_t* parent, int x, int y, int w, int h, uint32_t colo
   lv_obj_set_style_bg_opa(o, LV_OPA_COVER, 0);
   lv_obj_set_style_radius(o, radius, 0);
   lv_obj_remove_flag(o, LV_OBJ_FLAG_SCROLLABLE);
+  lv_obj_remove_flag(o, LV_OBJ_FLAG_CLICKABLE);   // plain shapes; buttons are lv_button
   return o;
 }
 static lv_obj_t* label(lv_obj_t* parent, const char* s, const lv_font_t* f, uint32_t color) {
@@ -286,98 +293,47 @@ static lv_obj_t* label(lv_obj_t* parent, const char* s, const lv_font_t* f, uint
   return l;
 }
 
-// ---------------- button row geometry (Dictate page) ----------------
-// idle:       [HOLD TO TALK 112][SEND 112][HF 64]
-// hands-free: HOLD slides off left, SEND slides to the left edge, STOP grows to fill the rest
-#define ROW_X 12
-#define ROW_Y 128
-#define ROW_H (SCREEN_H - ROW_Y - 12)
-#define W_PTT 112
-#define W_SEND 112
-#define W_HF 64
-#define GAPB 4
-#define X_SEND_IDLE (ROW_X + W_PTT + GAPB)
-#define X_HF_IDLE (X_SEND_IDLE + W_SEND + GAPB)
-#define X_HF_BIG (ROW_X + W_SEND + GAPB)
-#define W_HF_BIG (SCREEN_W - ROW_X - X_HF_BIG)
-#define ROW_ANIM_MS 220
-static bool rowBig = false;
-
-static void anim_x(lv_obj_t* o, int32_t to) {
-  lv_anim_t a; lv_anim_init(&a); lv_anim_set_var(&a, o);
-  lv_anim_set_values(&a, lv_obj_get_x(o), to); lv_anim_set_duration(&a, ROW_ANIM_MS);
-  lv_anim_set_path_cb(&a, lv_anim_path_ease_out);
-  lv_anim_set_exec_cb(&a, [](void* v, int32_t x) { lv_obj_set_x((lv_obj_t*)v, x); });
-  lv_anim_start(&a);
-}
-static void anim_w(lv_obj_t* o, int32_t to) {
-  lv_anim_t a; lv_anim_init(&a); lv_anim_set_var(&a, o);
-  lv_anim_set_values(&a, lv_obj_get_width(o), to); lv_anim_set_duration(&a, ROW_ANIM_MS);
-  lv_anim_set_path_cb(&a, lv_anim_path_ease_out);
-  lv_anim_set_exec_cb(&a, [](void* v, int32_t w) { lv_obj_set_width((lv_obj_t*)v, w); });
-  lv_anim_start(&a);
-}
-static void row_layout(bool big) {
-  if (big == rowBig) return;
-  rowBig = big;
-  if (big) {
-    anim_x(btnPtt, -W_PTT - 8);
-    anim_x(btnSend, ROW_X);
-    anim_x(btnHf, X_HF_BIG); anim_w(btnHf, W_HF_BIG);
-  } else {
-    anim_x(btnPtt, ROW_X);
-    anim_x(btnSend, X_SEND_IDLE);
-    anim_x(btnHf, X_HF_IDLE); anim_w(btnHf, W_HF);
-  }
-}
-
 // ---------------- state → screen ----------------
+static void dim(lv_obj_t* o, bool d) { lv_obj_set_style_opa(o, d ? LV_OPA_40 : LV_OPA_COVER, 0); }
+
 static void render_state() {
   const bool on = BleKbd::connected();
+  const bool ptt = cap == CAP_PTT, hf = cap == CAP_HANDSFREE;
 
-  // connection dot + title
-  lv_obj_set_style_bg_color(dot, C(on ? C_OK : C_WARN), 0);
-  lv_label_set_text(lblTitle, on ? "Flow Ctrl" : "Pairing…");
+  // top bar: dot + title
+  lv_obj_set_style_bg_color(dot, C(!on ? C_WARN : hf ? C_ACCENT : C_OK), 0);
+  lv_label_set_text(lblTitle, !on ? "Pairing…" : "Flow Ctrl");   // the red dot + red chip say hands-free
 
-  // status line under the pill
-  static char buf[48];
+  // the line under the pill
+  static char buf[40];
+  lv_obj_set_style_text_font(lblStatus, F_TINY, 0);
+  lv_obj_set_style_text_color(lblStatus, C(on ? C_TEXT : C_TEXT_2), 0);
   if (!on) {
-    lv_label_set_text(lblStatus, BleKbd::needsRepair() ? "Remove \"Flow Ctrl\" on the computer, then add it again"
-                                                       : "Add \"Flow Ctrl\" in Bluetooth settings");
-  } else if (cap == CAP_PTT) {
-    lv_label_set_text(lblStatus, "Listening — release to paste");
-  } else if (cap == CAP_HANDSFREE) {
-    uint32_t s = (millis() - capStart) / 1000;
-    snprintf(buf, sizeof buf, "Hands-free  %lu:%02lu", (unsigned long)(s / 60), (unsigned long)(s % 60));
+    lv_label_set_text(lblStatus, BleKbd::needsRepair() ? "Remove Flow Ctrl on the computer, then add it again"
+                                                       : "Add Flow Ctrl in Bluetooth settings");
+  } else if (ptt) {
+    lv_label_set_text(lblStatus, "LISTENING  ·  RELEASE TO PASTE");
+  } else if (hf) {
+    uint32_t sec = (millis() - capStart) / 1000;
+    snprintf(buf, sizeof buf, "%lu:%02lu  ·  TAP TO STOP", (unsigned long)(sec / 60), (unsigned long)(sec % 60));
     lv_label_set_text(lblStatus, buf);
   } else {
-    lv_label_set_text(lblStatus, "Ready");
+    lv_label_set_text(lblStatus, "HOLD TO TALK");
   }
 
-  // pill: rim glows while capturing
-  lv_obj_set_style_border_color(pill, C(cap == CAP_HANDSFREE ? C_ACCENT : cap == CAP_PTT ? C_TEXT : C_BORDER), 0);
+  // talk pill: a ring around it while held
+  lv_obj_set_style_outline_width(btnPtt, ptt ? 3 : 0, 0);
 
-  // PTT button
-  const bool pttDown = cap == CAP_PTT;
-  lv_obj_set_style_bg_color(btnPtt, C(pttDown ? C_TEXT : C_SURFACE), 0);
-  lv_obj_set_style_text_color(lblPtt, C(pttDown ? C_BG : C_TEXT), 0);
-  lv_label_set_text(lblPtt, pttDown ? "LISTENING" : "HOLD TO TALK");
-  const uint32_t micC = pttDown ? C_BG : C_TEXT;
-  lv_obj_set_style_bg_color(micCap, C(micC), 0);
-  lv_obj_set_style_border_color(micCup, C(micC), 0);
-  lv_obj_set_style_bg_color(micStem, C(micC), 0);
-  lv_obj_set_style_bg_color(micBase, C(micC), 0);
+  // SEND steps back while holding; the hands-free chip goes solid red while a session runs
+  dim(btnSend, ptt); dim(btnHf, ptt);
+  lv_obj_set_style_bg_opa(btnHf, hf ? LV_OPA_COVER : LV_OPA_TRANSP, 0);
+  lv_obj_set_style_image_recolor(icoHf, C(hf ? C_ACCENT_TEXT : C_ACCENT_INK), 0);
+  lv_obj_set_style_image_opa(icoHf, on ? LV_OPA_COVER : LV_OPA_40, 0);
 
-  // Hands-free button
-  const bool hf = cap == CAP_HANDSFREE;
-  lv_obj_set_style_bg_color(btnHf, C(hf ? C_ACCENT : C_SURFACE), 0);
-  lv_obj_set_style_text_color(lblHf, C(hf ? C_ACCENT_TEXT : C_TEXT), 0);
-  lv_obj_set_style_image_recolor(icoHf, C(hf ? C_ACCENT_TEXT : C_TEXT), 0);
-  lv_label_set_text(lblHf, hf ? "STOP" : "");
-  lv_obj_set_style_text_font(lblHf, hf ? F_TITLE : F_SMALL, 0);
-  lv_obj_align(icoHf, LV_ALIGN_CENTER, 0, hf ? -18 : -10);
-  lv_obj_align(lblHf, LV_ALIGN_CENTER, 0, hf ? 18 : 22);
-  row_layout(hf);
+  // trash chip: becomes a red ✕ (cancel) during hands-free
+  lv_label_set_text(lblDiscard, hf ? LV_SYMBOL_CLOSE : LV_SYMBOL_TRASH);
+  lv_obj_set_style_bg_color(btnDiscard, C(hf ? C_ACCENT_TINT : C_SURFACE), 0);
+  lv_obj_set_style_text_color(lblDiscard, C(hf ? C_ACCENT_INK : C_TEXT_2), 0);
 
   // disable buttons until paired
   if (on) { lv_obj_remove_state(btnPtt, LV_STATE_DISABLED); lv_obj_remove_state(btnHf, LV_STATE_DISABLED); lv_obj_remove_state(btnSend, LV_STATE_DISABLED); lv_obj_remove_state(btnDiscard, LV_STATE_DISABLED); }
@@ -390,16 +346,18 @@ static void render_state() {
 }
 
 // ---------------- waveform ----------------
+// Idle: a row of dots, like Wispr's bar at rest. Live: centre-weighted bars, white while held,
+// red while hands-free.
 static void wave_tick(lv_timer_t*) {
   const bool live = cap != CAP_IDLE;
+  const int maxH = 54;
   for (int i = 0; i < N_BARS; i++) {
     int target;
     if (live) {
-      // centre-weighted random walk so it reads as speech, not noise
-      int envelope = 10 + 18 * (N_BARS / 2 - abs(i - N_BARS / 2)) / (N_BARS / 2);
-      target = 6 + (int)(esp_random() % (uint32_t)envelope);
+      int envelope = 14 + (maxH - 14) * (N_BARS / 2 - abs(i - N_BARS / 2)) / (N_BARS / 2);
+      target = 8 + (int)(esp_random() % (uint32_t)envelope);
     } else {
-      target = 4;
+      target = 6;
     }
     barH[i] += (target - barH[i]) / 2;
     lv_obj_set_height(bars[i], barH[i]);
@@ -409,7 +367,7 @@ static void wave_tick(lv_timer_t*) {
 
 // ---------------- key actions ----------------
 static void ptt_start() {
-  if (cap == CAP_HANDSFREE) { show_toast("Hands-free is on — tap STOP first"); return; }
+  if (cap == CAP_HANDSFREE) return;            // a tap on the pill stops hands-free (ptt_event)
   cap = CAP_PTT; capStart = millis();
   BleKbd::press(PTT_MODS);            // modifiers first, like a real keyboard
   delay(12);
@@ -464,6 +422,7 @@ static void discard() {
 static void ptt_event(lv_event_t* e) {
   switch (lv_event_get_code(e)) {
     case LV_EVENT_PRESSED:     ptt_start(); break;
+    case LV_EVENT_SHORT_CLICKED: if (cap == CAP_HANDSFREE) hf_toggle(); break;
     case LV_EVENT_RELEASED:
     case LV_EVENT_PRESS_LOST:  ptt_end(); break;
     default: break;
@@ -528,12 +487,17 @@ static lv_obj_t* make_button(lv_obj_t* parent, int x, int y, int w, int h) {
   lv_obj_set_style_bg_opa(b, LV_OPA_COVER, 0);
   lv_obj_set_style_bg_color(b, C(C_SURFACE_HI), LV_STATE_PRESSED);
   lv_obj_set_style_bg_opa(b, LV_OPA_40, LV_STATE_DISABLED);
-  lv_obj_set_style_radius(b, R_BTN, 0);
-  lv_obj_set_style_border_width(b, 1, 0);
-  lv_obj_set_style_border_color(b, C(C_BORDER), 0);
+  lv_obj_set_style_radius(b, 10, 0);
+  lv_obj_remove_flag(b, LV_OBJ_FLAG_SCROLLABLE);
   return b;
 }
 
+// Layout, landscape 320 x 240:
+//   top bar    y 6–46   dot + title (long-press → About) · hands-free chip · trash chip · [dictate | transform] switch
+//   Dictate    y 54–132 the black pill = HOLD TO TALK, waveform inside
+//              y 142    status line, 12 px (HOLD TO TALK / LISTENING / m:ss / pairing help)
+//              y 166–232 SEND, full width. During hands-free a tap on the pill stops it.
+//   Transform  y 54–174 2 x 2 transforms (first one black) · y 182–222 SELECT ALL · VIEW DIFF
 static void ui_build() {
   lv_obj_t* scr = lv_screen_active();
   lv_obj_set_style_bg_color(scr, C(C_BG), 0);
@@ -544,28 +508,17 @@ static void ui_build() {
   pageDictate = box(scr, 0, 0, SCREEN_W, SCREEN_H, C_BG, 0); lv_obj_set_style_bg_opa(pageDictate, LV_OPA_TRANSP, 0);
   pageXf      = box(scr, 0, 0, SCREEN_W, SCREEN_H, C_BG, 0); lv_obj_set_style_bg_opa(pageXf, LV_OPA_TRANSP, 0);
 
-  // --- top bar: status only ---
-  dot = box(scr, 16, 14, 8, 8, C_WARN, 4);
+  // --- top bar ---
+  dot = box(scr, 14, 22, 8, 8, C_WARN, 4);
   lblTitle = label(scr, "Flow Ctrl", F_SMALL, C_TEXT_2);
-  lv_obj_set_pos(lblTitle, 32, 9);
-  lv_obj_t* titleHit = box(scr, 0, 0, 150, 34, C_BG, 0);      // long-press → About page
+  lv_obj_set_pos(lblTitle, 28, 17);
+  lv_obj_t* titleHit = box(scr, 0, 0, 140, 50, C_BG, 0);      // long-press → About page
   lv_obj_set_style_bg_opa(titleHit, LV_OPA_TRANSP, 0);
   lv_obj_add_flag(titleHit, LV_OBJ_FLAG_CLICKABLE);
   lv_obj_add_event_cb(titleHit, title_event, LV_EVENT_LONG_PRESSED, nullptr);
 
-  // --- shared row (both pages): waveform circle · trash · [dictate | transform] lozenge with a sliding knob ---
-  const int rowY = 36, D = 56;
-  const int xWave = 12, xTrash = xWave + D + 8, xSeg = xTrash + D + 8, segW = SCREEN_W - 12 - xSeg;
-  const int pillW = D, pillH = D, pillX = xWave, pillY = rowY;
-  pill = box(scr, pillX, pillY, pillW, pillH, C_SURFACE, LV_RADIUS_CIRCLE);
-  lv_obj_set_style_border_width(pill, 1, 0);
-  lv_obj_set_style_border_color(pill, C(C_BORDER), 0);
-  const int bw = 4, gap = 2, span = N_BARS * bw + (N_BARS - 1) * gap;
-  for (int i = 0; i < N_BARS; i++) {
-    barH[i] = 4;
-    bars[i] = box(pill, 0, 0, bw, 4, C_WAVE_IDLE, R_BAR);
-    lv_obj_align(bars[i], LV_ALIGN_LEFT_MID, (pillW - span) / 2 + i * (bw + gap), 0);
-  }
+  const int barY = 6, barHt = 40, segW = 92, xSeg = SCREEN_W - 12 - segW, wTrash = 48, xTrash = xSeg - 6 - wTrash,
+            wHfc = 48, xHf = xTrash - 6 - wHfc;
   auto icon = [&](lv_obj_t* parent, const lv_image_dsc_t* src, uint32_t color) {
     lv_obj_t* im = lv_image_create(parent);
     lv_image_set_src(im, src);
@@ -575,97 +528,122 @@ static void ui_build() {
     return im;
   };
 
-  // Discard (Esc)
-  btnDiscard = make_button(scr, xTrash, rowY, D, D);
-  lv_obj_set_style_radius(btnDiscard, LV_RADIUS_CIRCLE, 0);
-  lv_obj_t* ld = label(btnDiscard, LV_SYMBOL_TRASH, &lv_font_montserrat_14, C_TEXT_2);
-  lv_obj_center(ld);
+  // trash chip: Esc during hands-free, otherwise Undo
+  btnDiscard = make_button(scr, xTrash, barY, wTrash, barHt);
+  lblDiscard = label(btnDiscard, LV_SYMBOL_TRASH, &lv_font_montserrat_14, C_TEXT_2);
+  lv_obj_center(lblDiscard);
   lv_obj_add_event_cb(btnDiscard, discard_event, LV_EVENT_ALL, nullptr);
 
-  // Page selector: a lozenge, two icons, a green knob that slides under the active one
-  const int inset = 4, halfW = (segW - 2 * inset) / 2, knobH = D - 2 * inset;
-  lv_obj_t* seg = box(scr, xSeg, rowY, segW, D, C_SURFACE, LV_RADIUS_CIRCLE);
-  lv_obj_set_style_border_width(seg, 1, 0); lv_obj_set_style_border_color(seg, C(C_BORDER), 0);
+  // hands-free chip: red outline; solid red while a session runs (tap again, or tap the pill, to stop)
+  btnHf = make_button(scr, xHf, barY, wHfc, barHt);
+  lv_obj_set_style_bg_color(btnHf, C(C_ACCENT), 0);
+  lv_obj_set_style_bg_opa(btnHf, LV_OPA_TRANSP, 0);
+  lv_obj_set_style_bg_color(btnHf, C(C_ACCENT_TINT), LV_STATE_PRESSED);
+  lv_obj_set_style_bg_opa(btnHf, LV_OPA_COVER, LV_STATE_PRESSED);
+  lv_obj_set_style_bg_opa(btnHf, LV_OPA_TRANSP, LV_STATE_DISABLED);
+  lv_obj_set_style_border_opa(btnHf, LV_OPA_40, LV_STATE_DISABLED);
+  lv_obj_set_style_image_opa(btnHf, LV_OPA_40, LV_STATE_DISABLED);
+  lv_obj_set_style_border_width(btnHf, 2, 0);
+  lv_obj_set_style_border_color(btnHf, C(C_ACCENT), 0);
+  icoHf = icon(btnHf, &ic_handsfree, C_ACCENT_INK);
+  lv_obj_add_event_cb(btnHf, hf_event, LV_EVENT_ALL, nullptr);
+
+  // page switch: a lozenge, two icons, a black knob under the active one
+  const int inset = 4, halfW = (segW - 2 * inset) / 2, knobH = barHt - 2 * inset;
+  lv_obj_t* seg = box(scr, xSeg, barY, segW, barHt, C_SURFACE, LV_RADIUS_CIRCLE);
   knobX[0] = inset; knobX[1] = inset + halfW;
-  segKnob = box(seg, knobX[0], inset, halfW, knobH, C_OK, LV_RADIUS_CIRCLE);
-  auto half = [&](int x, const lv_image_dsc_t* src, int idx) {
+  segKnob = box(seg, knobX[0], inset, halfW, knobH, C_KNOB, LV_RADIUS_CIRCLE);
+  auto half = [&](int x, int idx) {
     lv_obj_t* b = lv_button_create(seg);
     lv_obj_remove_style_all(b);
-    lv_obj_set_pos(b, x, 0); lv_obj_set_size(b, halfW, D);
+    lv_obj_set_pos(b, x, 0); lv_obj_set_size(b, halfW, barHt);
     lv_obj_add_event_cb(b, tab_event, LV_EVENT_CLICKED, (void*)(intptr_t)idx);
     return b;
   };
-  tabDictate = half(inset, &ic_dictate, 0);        icoDictate = icon(tabDictate, &ic_dictate, C_BG);
-  tabXf      = half(inset + halfW, &ic_transform, 1); icoXf   = icon(tabXf, &ic_transform, C_TEXT_2);
+  tabDictate = half(inset, 0);         icoDictate = icon(tabDictate, &ic_dictate, C_BG);
+  tabXf      = half(inset + halfW, 1); icoXf      = icon(tabXf, &ic_transform, C_TEXT_2);
 
-  lblStatus = label(pageDictate, "Ready", F_SMALL, C_TEXT_2);
-  lv_obj_set_width(lblStatus, SCREEN_W - 32);
-  lv_obj_set_style_text_align(lblStatus, LV_TEXT_ALIGN_CENTER, 0);
-  lv_obj_set_pos(lblStatus, 16, 100);
-
-  // --- buttons ---
-  const int by = ROW_Y, bh = ROW_H, bw2 = W_PTT, bwS = W_SEND, bwH = W_HF, bxS = X_SEND_IDLE, bx2 = X_HF_IDLE;  // hold · send equal, hands-free gets the rest
-  btnPtt = make_button(pageDictate, 12, by, bw2, bh);
-  // mic glyph: capsule + cup + stem + base
-  micCap  = box(btnPtt, 0, 0, 12, 22, C_TEXT, 6);   lv_obj_align(micCap,  LV_ALIGN_TOP_MID, 0, 16);
-  micCup  = box(btnPtt, 0, 0, 24, 20, C_TEXT, 12);  lv_obj_align(micCup,  LV_ALIGN_TOP_MID, 0, 22);
-  lv_obj_set_style_bg_opa(micCup, LV_OPA_TRANSP, 0);
-  lv_obj_set_style_border_width(micCup, 2, 0);
-  lv_obj_set_style_border_side(micCup, (lv_border_side_t)(LV_BORDER_SIDE_LEFT | LV_BORDER_SIDE_RIGHT | LV_BORDER_SIDE_BOTTOM), 0);
-  lv_obj_set_style_border_color(micCup, C(C_TEXT), 0);
-  micStem = box(btnPtt, 0, 0, 2, 6, C_TEXT, 0);     lv_obj_align(micStem, LV_ALIGN_TOP_MID, 0, 42);
-  micBase = box(btnPtt, 0, 0, 14, 2, C_TEXT, 1);    lv_obj_align(micBase, LV_ALIGN_TOP_MID, 0, 48);
-  lblPtt = label(btnPtt, "HOLD TO TALK", F_SMALL, C_TEXT);
-  lv_obj_align(lblPtt, LV_ALIGN_BOTTOM_MID, 0, -16);
+  // --- Dictate: the black pill is the talk button, waveform inside ---
+  const int px = 12, py = 54, pw = SCREEN_W - 24, ph = 78;
+  btnPtt = make_button(pageDictate, px, py, pw, ph);
+  lv_obj_set_style_radius(btnPtt, LV_RADIUS_CIRCLE, 0);
+  lv_obj_set_style_bg_color(btnPtt, C(C_PILL), 0);
+  lv_obj_set_style_bg_color(btnPtt, C(C_PILL), LV_STATE_PRESSED);
+  lv_obj_set_style_border_width(btnPtt, 1, 0);
+  lv_obj_set_style_border_color(btnPtt, C(C_PILL_RIM), 0);
+  lv_obj_set_style_outline_color(btnPtt, C(C_TEXT), 0);
+  lv_obj_set_style_outline_pad(btnPtt, 3, 0);
+  lv_obj_set_style_outline_width(btnPtt, 0, 0);
+  const int bw = 6, gap = 7, span = N_BARS * bw + (N_BARS - 1) * gap;
+  for (int i = 0; i < N_BARS; i++) {
+    barH[i] = 6;
+    bars[i] = box(btnPtt, 0, 0, bw, 6, C_WAVE_IDLE, 3);
+    lv_obj_align(bars[i], LV_ALIGN_LEFT_MID, (pw - span) / 2 + i * (bw + gap), 0);
+  }
   lv_obj_add_event_cb(btnPtt, ptt_event, LV_EVENT_ALL, nullptr);
 
-  btnSend = make_button(pageDictate, bxS, by, bwS, bh);
-  lblSendSym = label(btnSend, LV_SYMBOL_NEW_LINE, &lv_font_montserrat_14, C_TEXT);
-  lv_obj_align(lblSendSym, LV_ALIGN_CENTER, 0, -14);
-  lblSend = label(btnSend, "SEND", F_SMALL, C_TEXT);
-  lv_obj_align(lblSend, LV_ALIGN_CENTER, 0, 10);
+  lblStatus = label(pageDictate, "HOLD TO TALK", F_TINY, C_TEXT);
+  lv_obj_set_width(lblStatus, pw);
+  lv_label_set_long_mode(lblStatus, LV_LABEL_LONG_SCROLL_CIRCULAR);
+  lv_obj_set_style_text_align(lblStatus, LV_TEXT_ALIGN_CENTER, 0);
+  lv_obj_set_style_text_letter_space(lblStatus, 1, 0);
+  lv_obj_set_pos(lblStatus, px, py + ph + 10);
+
+  const int ry = 166, rh = 66;
+  btnSend = make_button(pageDictate, px, ry, pw, rh);
+  lblSend = label(btnSend, "SEND", F_LABEL, C_TEXT);
+  lv_obj_set_style_text_letter_space(lblSend, 1, 0);
+  lv_obj_center(lblSend);
   lv_obj_add_event_cb(btnSend, send_event, LV_EVENT_ALL, nullptr);
 
-  btnHf = make_button(pageDictate, bx2, by, bwH, bh);
-  icoHf = icon(btnHf, &ic_handsfree, C_TEXT);
-  lv_obj_align(icoHf, LV_ALIGN_CENTER, 0, -10);
-  lblHf = label(btnHf, "", F_SMALL, C_TEXT);
-  lv_obj_align(lblHf, LV_ALIGN_CENTER, 0, 22);
-  lv_obj_add_event_cb(btnHf, hf_event, LV_EVENT_ALL, nullptr);
-
-  // --- page 2: transforms (2 x 2 grid, table-driven) + utility strip ---
+  // --- Transform: 2 x 2 (table-driven, first one black) + SELECT ALL · VIEW DIFF ---
   {
-    const int gx = 12, gy = 100, gw = 148, gh = 50, gap = 4;
+    const int gx = 12, gy = 54, gw = 146, gh = 58, g = 4;
     for (size_t i = 0; i < N_XFORMS && i < 4; i++) {
-      lv_obj_t* b = make_button(pageXf, gx + (i % 2) * (gw + gap), gy + (i / 2) * (gh + gap), gw, gh);
-      lv_obj_t* n = label(b, XFORMS[i].name, F_SMALL, C_TEXT); lv_obj_align(n, LV_ALIGN_CENTER, 0, -8);
-      lv_obj_t* h = label(b, XFORMS[i].hint, &lv_font_montserrat_14, C_TEXT_2); lv_obj_align(h, LV_ALIGN_CENTER, 0, 11);
+      lv_obj_t* b = make_button(pageXf, gx + (i % 2) * (gw + g), gy + (i / 2) * (gh + g), gw, gh);
+      const bool lead = i == 0;
+      if (lead) {
+        lv_obj_set_style_bg_color(b, C(C_PILL), 0);
+        lv_obj_set_style_bg_color(b, C(C_TEXT_2), LV_STATE_PRESSED);
+      }
+      lv_obj_t* n = label(b, XFORMS[i].name, F_SMALL, lead ? C_WAVE_LIVE : C_TEXT);
+      lv_obj_align(n, LV_ALIGN_CENTER, 0, -9);
+      lv_obj_t* h = label(b, XFORMS[i].hint, F_SMALL, C_TEXT_3);
+      lv_obj_align(h, LV_ALIGN_CENTER, 0, 11);
       lv_obj_add_event_cb(b, xf_event, LV_EVENT_CLICKED, (void*)&XFORMS[i]);
     }
-    for (size_t i = N_XFORMS; i < 4; i++) {   // empty slot: dashed placeholder
-      lv_obj_t* b = box(pageXf, gx + (i % 2) * (gw + gap), gy + (i / 2) * (gh + gap), gw, gh, C_BG, R_BTN);
+    for (size_t i = N_XFORMS; i < 4; i++) {   // empty slot
+      lv_obj_t* b = box(pageXf, gx + (i % 2) * (gw + g), gy + (i / 2) * (gh + g), gw, gh, C_BG, 10);
+      lv_obj_set_style_bg_opa(b, LV_OPA_TRANSP, 0);
       lv_obj_set_style_border_width(b, 1, 0); lv_obj_set_style_border_color(b, C(C_BORDER), 0);
-      lv_obj_t* h = label(b, "empty slot", &lv_font_montserrat_14, C_TEXT_3); lv_obj_center(h);
+      lv_obj_t* h = label(b, "EMPTY SLOT", F_SMALL, C_TEXT_3); lv_obj_center(h);
     }
-    const int sy = gy + 2 * gh + gap + 6, sh = 26;   // utility strip
-    lv_obj_t* bA = make_button(pageXf, gx, sy, gw, sh);
-    lv_obj_t* lA = label(bA, "Select all   " SELALL_NAME, &lv_font_montserrat_14, C_TEXT_2); lv_obj_center(lA);
-    lv_obj_add_event_cb(bA, select_all_event, LV_EVENT_CLICKED, nullptr);
-    lv_obj_t* bD = make_button(pageXf, gx + gw + gap, sy, gw, sh);
-    lv_obj_t* lD = label(bD, "View diff   " OPT_NAME " O", &lv_font_montserrat_14, C_TEXT_2); lv_obj_center(lD);
-    lv_obj_add_event_cb(bD, diff_event, LV_EVENT_CLICKED, nullptr);
+    const int sy = gy + 2 * gh + g + 8, sh = 40;
+    auto util = [&](int x, const char* txt, lv_event_cb_t cb) {
+      lv_obj_t* b = make_button(pageXf, x, sy, gw, sh);
+      lv_obj_set_style_bg_opa(b, LV_OPA_TRANSP, 0);
+      lv_obj_set_style_bg_opa(b, LV_OPA_COVER, LV_STATE_PRESSED);
+      lv_obj_set_style_border_width(b, 1, 0); lv_obj_set_style_border_color(b, C(C_BORDER), 0);
+      lv_obj_t* l = label(b, txt, F_SMALL, C_TEXT); lv_obj_center(l);
+      lv_obj_add_event_cb(b, cb, LV_EVENT_CLICKED, nullptr);
+    };
+    util(gx, "SELECT ALL", select_all_event);
+    util(gx + gw + g, "VIEW DIFF", diff_event);
   }
   set_page(0);
 
-  // --- toast ---
-  toast = box(scr, 0, 0, 200, 30, C_SURFACE_HI, 15);
-  lv_obj_align(toast, LV_ALIGN_TOP_MID, 0, 100);
-  toastTxt = label(toast, "", F_SMALL, C_TEXT);
+  // --- toast: a small black pill over the status line ---
+  toast = box(scr, 0, 0, SCREEN_W - 24, 30, C_TEXT, 15);
+  lv_obj_align(toast, LV_ALIGN_TOP_MID, 0, 134);
+  toastTxt = label(toast, "", F_SMALL, C_BG);
+  lv_obj_set_width(toastTxt, SCREEN_W - 48);
+  lv_label_set_long_mode(toastTxt, LV_LABEL_LONG_SCROLL_CIRCULAR);
+  lv_obj_set_style_text_align(toastTxt, LV_TEXT_ALIGN_CENTER, 0);
   lv_obj_center(toastTxt);
   lv_obj_add_flag(toast, LV_OBJ_FLAG_HIDDEN);
 
   render_state();
-  show_about(true);   // boot splash: version for two seconds
+  show_about(true);   // boot splash
 }
 
 // ---------------- housekeeping ----------------
@@ -702,7 +680,7 @@ void setup() {
   tft.init();
   tft.setRotation(PANEL_ROTATION);
   tft.setSwapBytes(true);
-  tft.fillScreen(TFT_BLACK);
+  tft.fillScreen(RGB565(C_BG));
   // Paint the badge straight to the panel before LVGL exists, so the very first thing the glass shows
   // is the splash, not a strip-by-strip reveal of the UI. LVGL redraws the identical pixels moments later.
   {
@@ -710,7 +688,14 @@ void setup() {
     static uint16_t line[240];
     const uint8_t* a = (const uint8_t*)logo_woodwerd.data;
     for (int y = 0; y < h; y++) {
-      for (int x = 0; x < w; x++) { uint8_t v = a[y * w + x]; line[x] = ((v >> 3) << 11) | ((v >> 2) << 5) | (v >> 3); }
+      for (int x = 0; x < w; x++) {
+        // blend the badge's alpha from canvas to ink, so the pre-LVGL frame matches the theme
+        const uint32_t v = a[y * w + x], bg = C_BG, fg = C_TEXT;
+        const uint32_t r = (((bg >> 16) & 255) * (255 - v) + ((fg >> 16) & 255) * v) / 255;
+        const uint32_t g = (((bg >> 8) & 255) * (255 - v) + ((fg >> 8) & 255) * v) / 255;
+        const uint32_t b = ((bg & 255) * (255 - v) + (fg & 255) * v) / 255;
+        line[x] = (uint16_t)(((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3));
+      }
       tft.pushImage(x0, y0 + y, w, 1, line);
     }
   }

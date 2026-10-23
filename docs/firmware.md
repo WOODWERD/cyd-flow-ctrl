@@ -7,7 +7,7 @@ pip install platformio
 pio run -e cyd2usb-mac      # USB-C / 2-USB board (ST7789, BGR), Mac host
 pio run -e cyd2usb-win      # same board, Windows host (Alt/Ctrl labels, Ctrl+A)
 pio run -e cyd              # original micro-USB board (ILI9341)
-tools/merge.sh cyd2usb-mac  # single 0x0 image from the build; version comes from include/version.h
+tools/merge.sh cyd2usb-mac  # full 0x0 image, -update.bin (0x10000) and the web-flasher pieces; version from include/version.h
 ```
 
 Build flags (add to `build_flags` or `-D` on the command line):
@@ -29,13 +29,15 @@ NimBLE-Arduino 2.x. ~103 KB RAM, ~890 KB flash. Compiles clean with no PSRAM.
 
 ## The screen
 
-Landscape 320 × 240. The visual cue is Wispr's own listening indicator: a dark circle with a row of
-bars that lie flat as dots when idle and breathe while you're talking — white for push-to-talk,
-coral when locked into hands-free. The rim of the circle and the RGB LED follow the same state.
-Buttons are big because you'll hit them without looking: HOLD TO TALK and SEND are equal at 112 × 100 px,
-with a 64 px hands-free key (a slashed-hand icon) on the right. Start hands-free and the row re-flows —
-HOLD TO TALK slides off, SEND slides left, and a big coral STOP fills the rest until you tap it. The backlight stays at full brightness — the board is USB-powered,
-so there is nothing to save and never a "wake-up" tap.
+Landscape 320 × 240, a light "paper" theme taken from Wispr Flow: warm off-white, black type, one
+red accent kept for live or destructive states (`-DTHEME_DARK` restores the old dark colours).
+HOLD TO TALK is a 296 × 78 px black bar styled after Wispr's Flow bar, with eleven waveform bars
+inside: dots at rest, white while held (plus a ring around the bar), red during hands-free. Under it a
+12 px status line; under that SEND, full width at 66 px. The top row carries the hands-free hand, the
+trash and the page selector. During hands-free the hand turns solid red and a tap anywhere on the bar
+stops the session — the big target, so stopping never takes aim. The RGB LED follows the same state.
+The backlight stays at full brightness — the board is USB-powered, so there is nothing to save and
+never a "wake-up" tap.
 
 Colours, radii and fonts are tokens in `src/theme.h`. `tools/mock.py` renders every state with PIL so
 you can retune without flashing; `tools/make_guide.py` builds the annotated screens in `docs/`.
@@ -50,12 +52,14 @@ include/version.h   FW_VERSION — the one place the version lives (banner, spla
 src/main.cpp        UI (LVGL), touch, state machine, backlight, LED
 src/ble_kbd.*       minimal NimBLE HID keyboard: boot-keyboard report map, press / releaseAll / tap
 src/theme.h         colour, radius and font tokens
-src/assets/         Inter SemiBold 14/16/20 + IBM Plex Mono 14 as LVGL fonts (OFL, licences alongside); ic_*.c icons (head, sparkles, hand)
+src/assets/         Inter SemiBold 12/14/16/20 + IBM Plex Mono 14 as LVGL fonts (OFL, licences alongside); ic_*.c icons (head, sparkles, hand)
 include/lv_conf.h   LVGL 9.5 configuration
-tools/merge.sh      bootloader + partitions + boot_app0 + app → one image at 0x0
+tools/merge.sh      full 0x0 image + app-only update image + bootloader/partitions/boot_app0 pieces
 tools/make_icons.py PIL-drawn icons → LVGL A8 arrays in src/assets (needs LVGL's LVGLImage.py)
-tools/mock.py       PIL mock of the screen states → flow-ctrl-mock.png (copied to docs/screen-states.png)
-tools/make_guide.py annotated screens + flow strip for docs/GETTING_STARTED.md
+tools/sim/run.sh    renders the real firmware on a desktop (LVGL + stubs, no board) and rebuilds the docs
+                    images: guide-*.png and screen-states.png. Use this after any screen change.
+tools/mock.py       older PIL mock of the v0.9.5 screens (superseded by tools/sim)
+tools/make_guide.py older annotated screens for v0.9.5 (superseded by tools/sim)
 case/               STL + STEP for base, lid, light pipe; print/assembly notes; fastener spec
 release/            prebuilt merged image
 ```

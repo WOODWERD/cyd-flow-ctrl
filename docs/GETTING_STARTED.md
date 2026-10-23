@@ -13,14 +13,17 @@ then what each button is for.
 
 **Flash the firmware.** Plug the board in over USB-C and either use the web flasher in Chrome
 ([esptool-js](https://espressif.github.io/esptool-js/): 460800 baud, address `0x0`,
-file `release/flow-ctrl-v0.9.5-cyd2usb-mac.bin`) or, from a terminal:
+file `release/flow-ctrl-v0.9.6-cyd2usb-mac.bin`), the [Flash page](flash/index.md), or, from a terminal:
 
 ```
 pip install esptool
-esptool.py --chip esp32 --port /dev/cu.usbserial-XXXX --baud 460800 write_flash 0x0 flow-ctrl-v0.9.5-cyd2usb-mac.bin
+esptool.py --chip esp32 --port /dev/cu.usbserial-XXXX --baud 460800 write_flash 0x0 flow-ctrl-v0.9.6-cyd2usb-mac.bin
 ```
 
-The screen shows "Flow Ctrl · v0.9.5 · Mac" with the WOODWERD badge and the push-to-talk chord for four seconds, then comes up with an amber dot and
+Later updates: flash `flow-ctrl-v…-cyd2usb-mac-update.bin` at `0x10000` (or use the Flash page) so the
+board keeps its pairing.
+
+The screen shows "Flow Ctrl · v0.9.6 · Mac" with the WOODWERD badge and the push-to-talk chord for four seconds, then comes up with an amber dot and
 "Pairing…". (Long-press the **Flow Ctrl** title in the top-left corner at any time to see that again,
 with the chord it sends and its Bluetooth address. Tap anywhere to close. The **Forget pairing**
 button there — two taps — is the fix if the Mac and the board ever disagree about the pairing.)
@@ -53,40 +56,40 @@ and never sleeps — a button you have to wake up first is not a button.
 
 This is the page it wakes up on and the one you will live on.
 
-1. **Listening indicator.** The circle shows what Wispr is doing. Flat dots: idle. White bars: you are
-   holding to talk. Coral bars: a hands-free session is running. It is on both pages, so you can
-   never lose track of an open session.
-2. **Discard.** The trash does the thing you would reach for: while a hands-free session is running
+1. **Status.** The dot is green when the Mac is connected, amber while pairing, red during a
+   hands-free session. Long-press the **Flow Ctrl** title for the About page.
+2. **Hands-free.** The red hand. One tap starts a session that runs until you stop it — for long
+   dictation where holding a button for three minutes would be silly.
+3. **Discard.** The trash does the thing you would reach for: while a hands-free session is running
    it sends `Esc` and Wispr cancels it, nothing pastes; any other time it sends `Cmd+Z`, which undoes
    the last paste and removes what you just dictated from the field. (A hold cannot be cancelled
    mid-way — Wispr starts transcribing the instant you let go — so after a hold, undo is the answer.)
-3. **Page selector.** A lozenge with a green knob that slides between two icons — the talking head
+4. **Page selector.** A lozenge with a black knob that slides between two icons — the talking head
    (Dictate) and the sparkles (Transform). It only changes what the screen shows. It never sends a key.
-4. **Hold to talk.** The everyday button. Press and keep your finger down, say a sentence or two, let
-   go. Wispr transcribes and pastes at wherever your cursor is. Feels like a walkie-talkie.
-5. **Send.** A Return key. When you dictate into a chat box or a Claude prompt, tap this once the
+5. **Hold to talk.** The big black bar, styled after Wispr's own Flow bar. Press and keep your finger
+   down, say a sentence or two, let go. Wispr transcribes and pastes at wherever your cursor is. Dots
+   at rest, white bars while you hold, and a ring around the bar so you know it is listening.
+6. **Send.** A Return key. When you dictate into a chat box or a Claude prompt, tap this once the
    words have appeared and it goes. It is a separate key on purpose: Wispr pastes a beat *after*
    you let go, and a Return fired too early would send an empty message.
-6. **Hands-free.** The slashed-hand key. One tap starts a session that runs until you stop it — for
-   long dictation where holding a button for three minutes would be silly.
 
 ## 3 · Hands-free, while it runs
 
 ![Hands-free running](guide-handsfree.png)
 
-Tap the hand and the row re-arranges itself. Hold-to-talk slides off the screen (it is meaningless
-mid-session), Send slides into its place, and a large coral **STOP** fills the rest of the row. The
-status line counts the session up.
+Tap the hand and it turns solid red, the dot turns red, the bars in the black bar turn red, and the
+line underneath counts the session up: **2:14 · TAP TO STOP**.
 
 - Talk. Pause. Think. Nothing times out on the button's side. While the session runs, Wispr keeps
   the words in its own bar at the bottom of the screen — nothing lands in your document until you
   stop. That is Wispr's hands-free design, not a fault.
-- **STOP** ends the session; Wispr transcribes and pastes everything you said as one block. The row
-  slides back to normal.
-- **Discard** (the trash) cancels the session without pasting. After it has pasted, the trash becomes *undo* instead.
+- **Tap the black bar** (or the red hand again) to stop. Wispr transcribes and pastes everything you
+  said as one block. The bar is the big target on purpose — stopping should never take aim.
+- **Discard** — the trash has turned into a red ✕ — cancels the session without pasting. After it
+  has pasted, the trash goes back to being *undo*.
 - If you stopped Wispr from the Mac instead — clicked its bar, hit Esc on the keyboard — the button
-  does not know, because nothing flows back from the Mac to it. **Long-press STOP** to reset the
-  button without sending anything.
+  does not know, because nothing flows back from the Mac to it. **Long-press the red hand** to reset
+  the button without sending anything.
 
 ## 4 · The Transform page
 
@@ -114,7 +117,7 @@ day. Adding one is a line in `src/main.cpp`.
 
 **Quick dictation.** Hold → talk → release → (Send, if it is a message). Most of the day is this.
 
-**Long dictation.** Hands-free → talk as long as you like → Stop → Send. For a brief, a design
+**Long dictation.** Hand → talk as long as you like → tap the bar → Send. For a brief, a design
 rationale, a long reply. Everything arrives as one paste, so check the length limit of wherever it
 is landing before you dictate an essay into it.
 
@@ -127,12 +130,12 @@ Claude receives is better than what you said.
 | Symptom | Likely cause |
 |---|---|
 | Amber dot, "Pairing…" | Not connected. Pair in Bluetooth settings; if it was paired before, toggle Bluetooth on the Mac. |
-| "Remove Flow Ctrl on the computer, then add it again" | The board and the Mac hold different pairing keys (a flash with *erase* does this). The board has already dropped its copy; remove Flow Ctrl in the Mac's Bluetooth list and pair once more. You can also trigger this yourself: About page → **Forget pairing** (tap twice). |
+| "Remove Flow Ctrl on the computer, then add it again" | The board and the Mac hold different pairing keys (a full flash at `0x0`, or one with *erase*, does this — use the Flash page or the `-update.bin` for updates). The board has already dropped its copy; remove Flow Ctrl in the Mac's Bluetooth list and pair once more. You can also trigger this yourself: About page → **Forget pairing** (tap twice). |
 | Keeps dropping back to "Pairing…" every minute or two | Firmware older than v0.9.5. Reflash — see [Firmware & code](firmware.md#notes-for-anyone-adapting-it) for what changed. |
 | Green dot, but nothing happens | Wispr's push-to-talk shortcut is not `Ctrl+Opt+T`, or Wispr is not running. |
 | Works everywhere except Terminal / a password field | macOS *Secure Keyboard Entry* blocks Wispr there for every keyboard. Not a Flow Ctrl problem. |
-| Hands-free starts but a tap of STOP does not paste | Wispr missed the double-tap that starts the lock. Try again; if it is consistent, the tap gap is a constant in `src/main.cpp`. |
-| Screen shows STOP but Wispr is idle | You stopped it from the Mac. Long-press STOP. |
+| Hands-free starts but tapping the bar does not paste | Wispr missed the double-tap that starts the lock. Try again; if it is consistent, the tap gap is a constant in `src/main.cpp`. |
+| Screen shows hands-free (red hand) but Wispr is idle | You stopped it from the Mac. Long-press the red hand. |
 | Taps land off-target | The touch panel self-calibrates as you use it; a few presses toward each corner settles it. |
 
 ## 7 · Where to go next
