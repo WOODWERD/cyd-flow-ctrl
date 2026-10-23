@@ -34,12 +34,12 @@ boards need a USB-C → USB-A cable rather than C-to-C.
 ```
 pip install esptool
 # a new board: the full image at 0x0
-esptool.py --chip esp32 --port /dev/cu.usbserial-XXXX --baud 460800 write_flash 0x0 flow-ctrl-v0.9.6-cyd2usb-mac.bin
+esptool.py --chip esp32 --port /dev/cu.usbserial-XXXX --baud 460800 write_flash 0x0 flow-ctrl-v0.9.7-cyd2usb-mac.bin
 # an update: the app alone at 0x10000 — keeps the Bluetooth pairing
-esptool.py --chip esp32 --port /dev/cu.usbserial-XXXX --baud 460800 write_flash 0x10000 flow-ctrl-v0.9.6-cyd2usb-mac-update.bin
+esptool.py --chip esp32 --port /dev/cu.usbserial-XXXX --baud 460800 write_flash 0x10000 flow-ctrl-v0.9.7-cyd2usb-mac-update.bin
 ```
 
-On Windows the port is `COM3`-style and the images are `flow-ctrl-v0.9.6-cyd2usb-win.bin` /
+On Windows the port is `COM3`-style and the images are `flow-ctrl-v0.9.7-cyd2usb-win.bin` /
 `…-win-update.bin`.
 
 !!! tip "Updating keeps the pairing"

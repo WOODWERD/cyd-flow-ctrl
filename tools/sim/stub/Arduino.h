@@ -22,3 +22,7 @@ struct SerialS { void begin(int){} void println(const char*){} template<class...
 static SerialS Serial;
 #define VSPI 3
 struct SPIClass { SPIClass(int){} void begin(int,int,int,int){} };
+#define ADC_0db 0
+extern int g_ldr;
+inline int analogRead(int){ return g_ldr; }
+inline void analogSetPinAttenuation(int,int){}

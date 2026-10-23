@@ -1,4 +1,5 @@
 uint32_t g_ms = 0;
+int g_ldr = 300;
 uint16_t g_fb[320*240];
 extern bool g_conn, g_repair;
 #include "main.cpp"

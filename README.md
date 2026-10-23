@@ -45,12 +45,12 @@ guess. If they get out of sync, long-press the red hand.
 ## Quick start (no toolchain)
 
 1. **Flash.** Easiest: the [Flash page](https://woodwerd.github.io/cyd-flow-ctrl/flash/) in Chrome. Or grab
-   `release/flow-ctrl-v0.9.6-cyd2usb-mac.bin` (USB-C / 2-USB board, Mac) —
+   `release/flow-ctrl-v0.9.7-cyd2usb-mac.bin` (USB-C / 2-USB board, Mac) —
    or `…-cyd2usb-win.bin` for a Windows PC — or build the `cyd` env for the original micro-USB board. Either:
    - [ESP Web Tools / esptool-js](https://espressif.github.io/esptool-js/) in Chrome or Edge — 460800 baud, address `0x0`, or
    - `pip install esptool` then
      ```
-     esptool.py --chip esp32 --port /dev/cu.usbserial-XXXX --baud 460800 write_flash 0x0 flow-ctrl-v0.9.6-cyd2usb-mac.bin
+     esptool.py --chip esp32 --port /dev/cu.usbserial-XXXX --baud 460800 write_flash 0x0 flow-ctrl-v0.9.7-cyd2usb-mac.bin
      ```
    **Updating a board that's already paired?** Flash `…-update.bin` at `0x10000` instead. The full image
    at `0x0` wipes the board's Bluetooth pairing and you'd have to pair again.

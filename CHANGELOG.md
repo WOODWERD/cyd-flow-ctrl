@@ -1,6 +1,14 @@
 # Changelog
 
-## v0.9.6 — 2026-10-23
+## v0.9.7 — 2026-10-23
+- **Light sensor reading** on the About page: the live value from the sensor under the lid's light
+  pipe, with the lowest and highest seen since power-up. Groundwork for a backlight that follows the
+  room; the backlight does not change with it yet.
+- About page: hands-free row reads "tap the hand, tap bar to stop".
+
+*(v0.9.6 was not released on its own; its changes ship in v0.9.7.)*
+
+## v0.9.6 — 2026-10-23 (unreleased)
 - **New look, matched to Wispr Flow.** Warm off-white screen, black type, and one red accent kept
   for live or destructive states. Build with `-DTHEME_DARK` for the previous dark colours.
 - **The talk button is the waveform.** HOLD TO TALK is now one big black pill with the waveform

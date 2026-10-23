@@ -35,6 +35,7 @@ LV_IMAGE_DECLARE(logo_woodwerd);   // 240x111 A8 badge, tools/make_logo.py
 #define LED_G 16
 #define LED_B 17
 #define BL_PIN 21
+#define LDR_PIN 34           // light sensor (GT36516 LDR) under the lid's light pipe; reads higher when darker
 #define BL_CH 0
 #ifndef PANEL_ROTATION
 #define PANEL_ROTATION 1     // 1 = landscape (USB on the left), 3 = landscape flipped
@@ -102,6 +103,9 @@ static Cap cap = CAP_IDLE;
 static uint32_t capStart = 0;
 static bool wasConnected = false;
 static int blLevel = BL_FULL;
+static int ldrRaw = 0, ldrMin = 4095, ldrMax = 0;   // latest raw ADC reading and the range seen since boot
+static float ldrAvg = -1;                          // smoothed (~1 s)
+static lv_obj_t* lblLight = nullptr;               // live readout on the About page
 
 // ---------------- widgets ----------------
 static lv_obj_t *dot, *lblTitle, *btnDiscard, *lblDiscard;
@@ -167,7 +171,7 @@ static lv_obj_t* label(lv_obj_t* parent, const char* s, const lv_font_t* f, uint
 static lv_obj_t* overlay = nullptr;
 #define SPLASH_MS      4000     // how long the boot splash stays before it fades
 #define SPLASH_FADE_MS 450
-static void overlay_close(lv_event_t*) { if (overlay) { lv_obj_delete(overlay); overlay = nullptr; } }
+static void overlay_close(lv_event_t*) { if (overlay) { lv_obj_delete(overlay); overlay = nullptr; lblLight = nullptr; } }
 static void splash_fade_cb(void*, int32_t v) {          // v: 255 → 0
   if (!overlay) return;
   lv_obj_set_style_bg_opa(overlay, v, 0);
@@ -261,8 +265,10 @@ static void show_about(bool splash) {
   int y = 50;
   about_row(y, "Version", "v" FW_VERSION "  ·  " HOST_NAME, true, false);  y += 26;
   about_row(y, "Push to talk", PTT_LABEL, true, false);                  y += 26;
-  about_row(y, "Hands-free", "double tap, tap to stop", false, false);   y += 26;
-  about_row(y, "Trash", "Esc while live, undo after", false, false);     y += 26;
+  about_row(y, "Hands-free", "tap the hand, tap bar to stop", false, false);   y += 26;
+  about_row(y, "Light sensor", "", true, false);
+  lblLight = lv_obj_get_child(overlay, -1 - 1);   // the value label about_row just made (the hairline is last)
+  y += 26;
   about_row(y, "Bluetooth", link, false, false);                         y += 26;
   about_row(y, "Address", BleKbd::address(), true, true);
   lv_obj_t* footL = label(overlay, "WOODWERD LLC", F_SMALL, C_TEXT_3);
@@ -660,6 +666,23 @@ static void ui_tick(lv_timer_t*) {
 
   if (toastUntil && millis() > toastUntil) { lv_obj_add_flag(toast, LV_OBJ_FLAG_HIDDEN); toastUntil = 0; }
 
+  // light sensor: every 100 ms, smoothed over ~1 s. v0.9.7 only measures and shows it (About page)
+  // so the light pipe can be judged; the backlight does not follow it yet.
+  if (div % 2 == 0) {
+    ldrRaw = analogRead(LDR_PIN);
+    ldrAvg = ldrAvg < 0 ? ldrRaw : ldrAvg + (ldrRaw - ldrAvg) * 0.1f;
+    if (ldrRaw < ldrMin) ldrMin = ldrRaw;
+    if (ldrRaw > ldrMax) ldrMax = ldrRaw;
+    if (lblLight) {
+      static char lt[40];
+      snprintf(lt, sizeof lt, "%4d  (%d–%d)", (int)(ldrAvg + 0.5f), ldrMin, ldrMax);
+      lv_label_set_text(lblLight, lt);
+    }
+#ifdef LDR_DEBUG
+    if (div % 20 == 0) Serial.printf("ldr raw %d avg %d min %d max %d\n", ldrRaw, (int)ldrAvg, ldrMin, ldrMax);
+#endif
+  }
+
   // backlight: dim when idle, never off; any capture keeps it awake
   if (cap != CAP_IDLE) lv_display_trigger_activity(NULL);
   const int target = (DIM_AFTER_MS > 0 && lv_display_get_inactive_time(NULL) > DIM_AFTER_MS) ? BL_DIM : BL_FULL;
@@ -699,6 +722,7 @@ void setup() {
       tft.pushImage(x0, y0 + y, w, 1, line);
     }
   }
+  analogSetPinAttenuation(LDR_PIN, ADC_0db);   // 0–~1.1 V: the most sensitive range for this weak divider
   ledcSetup(BL_CH, 5000, 8);
   ledcAttachPin(BL_PIN, BL_CH);
   bl_set(BL_FULL);
