@@ -1,6 +1,6 @@
 # Publishing checklist
 
-_Status: firmware v0.9.5 in daily use (v0.9 + the Bluetooth link fix); housing v2 printed, test-fitted and released as-is. Any later housing change: re-export `case/*.stl|step` and the renders from Fusion, rerun `tools/make_guide.py`, push._
+_Status: firmware v0.9.7 (Wispr-style screens, updates keep the pairing); housing v2 printed, test-fitted and released as-is. Any screen change: run `tools/sim/run.sh` to regenerate the docs images from the firmware. Any housing change: re-export `case/*.stl|step` and the renders from Fusion, push._
 
 This folder is a ready-to-push GitHub repository. Steps, in order.
 
@@ -19,8 +19,11 @@ Repo description: *Push-to-talk / hands-free button for Wispr Flow on the ESP32 
 Topics worth adding: `esp32`, `cheap-yellow-display`, `cyd`, `wispr-flow`, `ble-hid`, `lvgl`, `3d-printing`.
 
 ## 2. Make a release
-Tag the version (currently `v0.9.5`) and attach `release/flow-ctrl-v0.9.5-cyd2usb-mac.bin` (and a `cyd` build if you make one) so people
-can flash without cloning. Keep the file in `release/` too — the README links to it.
+Tag the version (currently `v0.9.7`) and attach from `release/`: the full images `flow-ctrl-v0.9.7-cyd2usb-mac.bin` /
+`-win.bin` (new boards, `0x0`) and the update images `…-mac-update.bin` / `…-win-update.bin` (`0x10000`, keep the
+pairing) — and a `cyd` build if you make one — so people can flash without cloning. Keep them in `release/` too: the
+README links to them and the Flash page serves them (`tools/merge.sh` produces all of them, plus the
+bootloader / partitions / boot_app0 pieces the Flash page needs).
 
 ## 3. Add it to the CYD project list
 The CYD repo lists community projects in `PROJECTS.md` and asks that you add your own by PR at the

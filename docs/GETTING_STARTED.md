@@ -40,7 +40,8 @@ chord, the firmware's chord is a build flag — see the README.)
 two custom transforms and give them the shortcuts **Opt + 3** and **Opt + 4**. Suggested prompts are
 in the README. Prompt Engineer is built in and needs nothing.
 
-**On a Windows PC instead.** Flash `flow-ctrl-v0.9.5-cyd2usb-win.bin` (same board; the screen says
+**On a Windows PC instead.** Flash `flow-ctrl-v0.9.7-cyd2usb-win.bin`, or use the Windows button on the
+[Flash page](flash/index.md) (same board; the screen says
 Alt/Ctrl instead of Opt/Cmd and *Select all* sends `Ctrl+A`). Pair in Settings → Bluetooth → Add
 device. In Wispr Flow for Windows set push-to-talk to **Ctrl + Alt + T** — that is exactly what the
 board's chord becomes on Windows. Check what the Windows app assigns to Transforms before relying on the
