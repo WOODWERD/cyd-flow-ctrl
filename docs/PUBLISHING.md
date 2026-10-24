@@ -1,14 +1,13 @@
 # Publishing checklist
 
-_Status: firmware v0.9.7 (Wispr-style screens, updates keep the pairing); housing v2 printed, test-fitted and released as-is. Any screen change: run `tools/sim/run.sh` to regenerate the docs images from the firmware. Any housing change: re-export `case/*.stl|step` and the renders from Fusion, push._
+_Status: firmware v0.9.7 (Wispr-style screens, updates keep the pairing); housing v2 printed, test-fitted and released as-is. Any screen change: run `tools/sim/run.sh` to regenerate the docs images from the firmware. The housing lives in [WOODWERD/cyd-case](https://github.com/WOODWERD/cyd-case) since 2026-10-23; housing changes go there._
 
 This folder is a ready-to-push GitHub repository. Steps, in order.
 
 ## 1. The repo and the docs site
 - Repo: **https://github.com/WOODWERD/cyd-flow-ctrl** (public; created 2026-09-16).
 - Docs site: **https://woodwerd.github.io/cyd-flow-ctrl/** — built from `docs/` by `.github/workflows/pages.yml`
-  (MkDocs Material) on every push to `main`. The workflow reuses the README as the home page, `case/README.md`
-  as "The case" and the notices file, so there is one copy of every document. `docs/flash/` is an ESP Web Tools
+  (MkDocs Material) on every push to `main`. The workflow reuses the README as the home page and the notices file, so there is one copy of every document. `docs/flash/` is an ESP Web Tools
   page that flashes `release/*.bin` from Chrome in one click.
 - Settings → Pages → Source is **GitHub Actions** (set by hand 2026-09-16 — GitHub only allows it once the repo
   has content, and the workflow token can't set it).
@@ -36,8 +35,8 @@ bottom of the table (open source + functional are the only requirements). Fork
 
 Adjust the column order to whatever the table has when you get there (Name · Description · Author ·
 Additional Hardware? · Project Page · WebFlash). The case can also be offered as a line under
-"Other cases from elsewhere" in `3dModels/README.md` pointing at `case/`, if you'd like it findable
-from there too — that list already links out to Printables/MakerWorld/GitHub.
+"Other cases from elsewhere" in `3dModels/README.md` pointing at [cyd-case](https://github.com/WOODWERD/cyd-case), if you'd like it
+findable from there too — that list already links out to Printables/MakerWorld/GitHub.
 
 ## 4. Optional: web flasher
 The CYD list has a WebFlash column. A GitHub Pages site with ESP Web Tools and a `manifest.json`
@@ -45,8 +44,8 @@ pointing at the merged bin is an afternoon's work and lets people flash from Chr
 the Feeder-panel-style `esptool-js` route works but needs the user to type the address.
 
 ## 5. Optional: Printables / MakerWorld
-Upload `case/*.stl` with the three renders in `docs/` and the text of `case/README.md`. Link back to
-the repo for firmware. License choice there: CC-BY-4.0 is the usual pick for models (MIT is fine
+This now belongs to [cyd-case](https://github.com/WOODWERD/cyd-case): upload `housings/v2/*.stl` with its renders and the text of
+`housings/v2/README.md`, and link to the firmware repos from there. License choice there: CC-BY-4.0 is the usual pick for models (MIT is fine
 too; just be consistent with the repo).
 
 ## Before pushing — things checked already

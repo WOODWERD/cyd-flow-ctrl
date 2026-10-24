@@ -60,7 +60,6 @@ tools/sim/run.sh    renders the real firmware on a desktop (LVGL + stubs, no boa
                     images: guide-*.png and screen-states.png. Use this after any screen change.
 tools/mock.py       older PIL mock of the v0.9.5 screens (superseded by tools/sim)
 tools/make_guide.py older annotated screens for v0.9.5 (superseded by tools/sim)
-case/               STL + STEP for base, lid, light pipe; print/assembly notes; fastener spec
 release/            prebuilt merged image
 ```
 

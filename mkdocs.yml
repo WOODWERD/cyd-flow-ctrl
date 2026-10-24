@@ -29,9 +29,8 @@ theme:
     code: IBM Plex Mono
 nav:
   - Home: index.md
-  - Build it: BUILD.md
   - Getting started: GETTING_STARTED.md
-  - The case: case.md
+  - Case & parts: https://github.com/WOODWERD/cyd-case
   - Flash it: flash/index.md
   - Firmware & code: firmware.md
   - Bench test: TESTING.md

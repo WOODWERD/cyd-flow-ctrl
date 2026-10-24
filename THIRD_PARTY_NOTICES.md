@@ -33,11 +33,8 @@ The UI icons (`src/assets/ic_*.c`, drawn by `tools/make_icons.py`) are original 
 
 ## Hardware and CAD references
 
-- The case was designed around the CYD board CAD model published in
-  [witnessmenow/ESP32-Cheap-Yellow-Display](https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display)
-  (`3dModels/Havenview_CYD_CAD`), which is MIT-licensed. That model is **not** redistributed here —
-  only the case bodies designed for it. Board pin assignments come from the same repository's `PINS.md`.
-- USB-C opening dimensions follow the public USB Type-C Cable and Connector Specification, Appendix B.
+- The printed case now lives in its own repository, [WOODWERD/cyd-case](https://github.com/WOODWERD/cyd-case), with its own notices.
+- Board pin assignments come from [witnessmenow/ESP32-Cheap-Yellow-Display](https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display) (`PINS.md`, MIT).
 - "Cheap Yellow Display" / CYD is a community nickname for the Sunton ESP32-2432S028 board; no Sunton
   documentation is redistributed.
 

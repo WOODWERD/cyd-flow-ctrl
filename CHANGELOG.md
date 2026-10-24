@@ -1,5 +1,9 @@
 # Changelog
 
+## Docs — 2026-10-23
+- The printed case moved to its own repository, [WOODWERD/cyd-case](https://github.com/WOODWERD/cyd-case), shared by every WOODWERD CYD
+  firmware. Same housing v2 geometry; files renamed `CYD_Case_v2_*`. The build guide moved with it.
+
 ## v0.9.7 — 2026-10-23
 - **Light sensor reading** on the About page: the live value from the sensor under the lid's light
   pipe, with the lowest and highest seen since power-up. Groundwork for a backlight that follows the

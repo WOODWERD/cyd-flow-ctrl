@@ -5,7 +5,7 @@ Flow Ctrl is a desk button for [Wispr Flow](https://wisprflow.ai) dictation. It 
 Every button on it just sends a keyboard shortcut Wispr already understands — so there is nothing to
 install on the Mac, and if you unplug it, nothing changes.
 
-This guide assumes the puck is built. If you are starting from parts, [BUILD.md](BUILD.md) comes first —
+This guide assumes the puck is built. If you are starting from parts, the [WOODWERD CYD Case](https://github.com/WOODWERD/cyd-case) build guide comes first —
 board, printing, inserts, screws. This is the ten-minute version of what follows: what to set up once,
 then what each button is for.
 
@@ -142,5 +142,5 @@ Claude receives is better than what you said.
 ## 7 · Where to go next
 
 - The [README](../README.md) has the build flags, the code map, and the chord table.
-- [BUILD.md](BUILD.md) has the parts list, printing, inserts and assembly; [`case/README.md`](../case/README.md) the printable files and tolerances.
+- The [WOODWERD CYD Case](https://github.com/WOODWERD/cyd-case) has the parts list, printing, inserts, assembly, the printable files and tolerances.
 - Any other app with a keyboard shortcut can be driven the same way — change two constants.
