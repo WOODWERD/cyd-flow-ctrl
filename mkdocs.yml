@@ -8,17 +8,19 @@ copyright: "© 2026 WOODWERD LLC · MIT · Unofficial, not affiliated with Wispr
 docs_dir: docs
 theme:
   name: material
+  custom_dir: docs-theme/overrides   # WOODWERD/ctrl-docs-theme, checked out at build time
+  logo: assets/woodwerd/woodwerd-mark-light.svg
   palette:
-    - media: "(prefers-color-scheme: dark)"
-      scheme: slate
-      primary: black
-      accent: green
-      toggle: { icon: material/brightness-4, name: Light mode }
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: black
-      accent: green
+      primary: custom
+      accent: custom
       toggle: { icon: material/brightness-7, name: Dark mode }
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle: { icon: material/brightness-4, name: Light mode }
   features:
     - navigation.sections
     - navigation.footer
@@ -26,7 +28,17 @@ theme:
     - search.suggest
   font:
     text: Inter
-    code: IBM Plex Mono
+    code: JetBrains Mono
+extra_css:
+  - assets/woodwerd/woodwerd.css
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/WOODWERD
+      name: WOODWERD on GitHub
+    - icon: material/web
+      link: https://woodwerd.com
+      name: woodwerd.com
 nav:
   - Home: index.md
   - Getting started: GETTING_STARTED.md

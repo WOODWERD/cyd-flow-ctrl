@@ -1,5 +1,10 @@
 # Changelog
 
+## Docs — 2026-10-29
+- The docs site now wears the shared WOODWERD docs theme ([WOODWERD/ctrl-docs-theme](https://github.com/WOODWERD/ctrl-docs-theme)):
+  WOODWERD Design mark, ink header with an amber rule, warm cream pages, Inter and JetBrains Mono, and a strip
+  linking the Ctrl family. Docs build pinned to MkDocs 1.6 and Material 9.7.7.
+
 ## Docs — 2026-10-23
 - The printed case moved to its own repository, [WOODWERD/cyd-case](https://github.com/WOODWERD/cyd-case), shared by every WOODWERD CYD
   firmware. Same housing v2 geometry; files renamed `CYD_Case_v2_*`. The build guide moved with it.

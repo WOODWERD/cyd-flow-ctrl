@@ -13,9 +13,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # the shared WOODWERD docs theme (logo, colours, type, footer) for every Ctrl site
+      - uses: actions/checkout@v4
+        with:
+          repository: WOODWERD/ctrl-docs-theme
+          path: docs-theme
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
-      - run: pip install mkdocs-material
+      # pinned: MkDocs 2.0 drops theme overrides
+      - run: pip install "mkdocs>=1.6,<2" "mkdocs-material==9.7.7"
       # the docs site reuses the repo-level files: README → Home, notices
       - run: |
           cp README.md docs/index.md
