@@ -12,9 +12,9 @@ the computer, and nothing about your Wispr setup changes.
 - **Send** — a Return key, so a dictated Claude prompt or chat message goes without touching the keyboard.
 - **Discard** — the trash: cancels a running hands-free session (`Esc`), or undoes the last paste (`Cmd+Z`) after a hold.
 - **Transforms** — a second page fires Wispr's AI rewrites (Prompt Engineer, plus your own) on selected text.
-- Printed split case with only USB-C exposed: the [WOODWERD CYD Case](https://github.com/WOODWERD/cyd-case), shared by all WOODWERD CYD builds (STL/STEP, BOM, build guide).
+- Printed split case with only USB-C exposed: the [WOODWERD CYD Case](https://woodwerd.github.io/cyd-case/), shared by all WOODWERD CYD builds (STL/STEP, BOM, build guide).
 
-**New here?** Build the [WOODWERD CYD Case](https://github.com/WOODWERD/cyd-case) (parts, printing, inserts, assembly), then read the [Getting Started guide](docs/GETTING_STARTED.md) (setup and every button, with annotated screens).
+**New here?** Build the [WOODWERD CYD Case](https://woodwerd.github.io/cyd-case/) (parts, printing, inserts, assembly), then read the [Getting Started guide](https://woodwerd.github.io/cyd-flow-ctrl/GETTING_STARTED/) (setup and every button, with annotated screens).
 
 ![Dictate page](docs/guide-dictate.png)
 ![Case](docs/case_iso.png)
@@ -94,17 +94,17 @@ The top row — hands-free hand, trash and the page selector — is shared by bo
 
 ## Docs
 
-- [Case & parts](https://github.com/WOODWERD/cyd-case) — the WOODWERD CYD Case: bill of materials, which board to buy, printing, heat-set inserts, screws, assembly
-- [Flash it](docs/flash/index.md) — one-click install from Chrome (on the docs site), or esptool
-- [Getting Started](docs/GETTING_STARTED.md) — setup, every button and its intent, the three flows, troubleshooting
-- [Firmware & code](docs/firmware.md) — build flags, code map, how to drive another app with it
-- [Bench test](docs/TESTING.md) — the checklist every release has to pass
-- [Changelog](CHANGELOG.md)
-- [Publishing checklist](docs/PUBLISHING.md) — how this reaches the CYD project list and the docs site
+- [Case & parts](https://woodwerd.github.io/cyd-case/) — the WOODWERD CYD Case: bill of materials, which board to buy, printing, heat-set inserts, screws, assembly
+- [Flash it](https://woodwerd.github.io/cyd-flow-ctrl/flash/) — one-click install from Chrome (on the docs site), or esptool
+- [Getting Started](https://woodwerd.github.io/cyd-flow-ctrl/GETTING_STARTED/) — setup, every button and its intent, the three flows, troubleshooting
+- [Firmware & code](https://woodwerd.github.io/cyd-flow-ctrl/firmware/) — build flags, code map, how to drive another app with it
+- [Bench test](https://woodwerd.github.io/cyd-flow-ctrl/TESTING/) — the checklist every release has to pass
+- [Changelog](https://woodwerd.github.io/cyd-flow-ctrl/changelog/)
+- [Publishing checklist](https://woodwerd.github.io/cyd-flow-ctrl/PUBLISHING/) — how this reaches the CYD project list and the docs site
 
 ## Case
 
-Flow Ctrl uses housing v2 of the [WOODWERD CYD Case](https://github.com/WOODWERD/cyd-case): three parts, no supports, PETG, four
+Flow Ctrl uses housing v2 of the [WOODWERD CYD Case](https://woodwerd.github.io/cyd-case/housing-v2/): three parts, no supports, PETG, four
 M3 × 14 countersunk screws and four M3 × 4 mm heat-set inserts. Only the USB-C port is exposed; a clear
 light pipe carries the ambient-light sensor through the lid. The case lives in its own repository so
 every WOODWERD CYD firmware (Flow Ctrl, Media Ctrl, …) shares one set of files.
