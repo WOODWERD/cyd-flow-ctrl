@@ -9,18 +9,21 @@ docs_dir: docs
 theme:
   name: material
   custom_dir: docs-theme/overrides   # WOODWERD/ctrl-docs-theme, checked out at build time
-  logo: assets/woodwerd/woodwerd-mark-light.svg
   palette:
+    - media: "(prefers-color-scheme)"
+      primary: custom
+      accent: custom
+      toggle: { icon: material/monitor, name: "Theme: match my computer's setting" }
     - media: "(prefers-color-scheme: light)"
       scheme: default
       primary: custom
       accent: custom
-      toggle: { icon: material/brightness-7, name: Dark mode }
+      toggle: { icon: material/brightness-7, name: "Theme: light" }
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
       primary: custom
       accent: custom
-      toggle: { icon: material/brightness-4, name: Light mode }
+      toggle: { icon: material/brightness-4, name: "Theme: dark" }
   features:
     - navigation.sections
     - navigation.footer
@@ -32,6 +35,8 @@ theme:
 extra_css:
   - assets/woodwerd/woodwerd.css
 extra:
+  purpose: 'Dictation remote for Wispr Flow.'
+  version: v0.9.7
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/WOODWERD

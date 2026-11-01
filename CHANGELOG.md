@@ -1,5 +1,10 @@
 # Changelog
 
+## Docs — 2026-11-01
+- The docs site moves to WOODWERD Digital through the shared theme: the WOODWERD Toolkit strip with an All tools menu,
+  a product header with no brand mark, the mark in the footer only, ink primary buttons, and Inter and JetBrains Mono
+  bundled with the site instead of fetched from Google Fonts. The theme control now also follows the computer.
+
 ## Docs — 2026-10-29
 - The docs site now wears the shared WOODWERD docs theme ([WOODWERD/ctrl-docs-theme](https://github.com/WOODWERD/ctrl-docs-theme)):
   WOODWERD Design mark, ink header with an amber rule, warm cream pages, Inter and JetBrains Mono, and a strip
