@@ -19,6 +19,17 @@ tagging a version; if one fails, it is not a release.
 | 11 | **Link.** Leave it for 10 minutes. | Dot stays green. (Serial, if you are watching: no `disconnected` lines.) |
 | 12 | **Cold link.** Turn Bluetooth off then on on the Mac. | Reconnects by itself within ~15 s. |
 
+**Orientation.** Open About, then:
+
+| # | Step | Pass looks like |
+|---|---|---|
+| 13 | **Portrait.** Tap **PORTRAIT**. | The screen redraws in portrait with the USB cable at the bottom: status line, Hands-free and Discard, the black pill, Send. Toast names the side the USB is on. The dot stays green (no reconnect). |
+| 14 | **Touch in portrait.** Tap Hands-free, Discard, Send, and hold the pill, corner to corner. | Every tap lands on the button under your finger. If taps land mirrored or off by a quarter turn, note which rotation and report the `-DTOUCH_DEBUG` output. |
+| 15 | **Portrait steps.** Repeat steps 4–8 in portrait. Tap the two dots top right for Transform and repeat step 9. | Same results as landscape. The Hands-free label turns white on red while it runs; Discard becomes a red ✕ Cancel. |
+| 16 | **Flip.** Long-press the status line › **FLIP**, then again. | USB at the top, then back to the bottom. Touch follows each time (repeat step 14 once flipped). |
+| 17 | **Remembered.** Power-cycle the board. | Splash and screen come back in the last shape and side. An update at `0x10000` keeps it too; a full `0x0` image resets to landscape. |
+| 18 | **Back.** About › **LANDSCAPE**. | The v0.9.7 landscape screen, unchanged. |
+
 **Update keeps the pairing.** With the board paired, update it from the [Flash page](flash/index.md) (or flash
 `-update.bin` at `0x10000`). Pass: after the reboot the dot goes green by itself — no removing and re-adding
 Flow Ctrl on the computer.

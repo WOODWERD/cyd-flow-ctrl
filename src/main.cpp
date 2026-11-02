@@ -9,23 +9,28 @@
 // Page 2 "TRANSFORM": Wispr Transforms on the current selection (table below): Prompt Engineer,
 //   Drawing note, Client email — plus ⌘A select-all and ⌥O view-diff.
 // Match PTT_MODS / PTT_KEY to Wispr Flow → Settings → General → Shortcuts → Push to talk.
-// Landscape 320×240. LVGL 9 + TFT_eSPI + XPT2046 + NimBLE.
+// Landscape 320×240 or portrait 240×320 (About › PORTRAIT / LANDSCAPE, About › FLIP; remembered).
+// LVGL 9 + TFT_eSPI + XPT2046 + NimBLE.
 
 #include <Arduino.h>
 #include <lvgl.h>
 #include <TFT_eSPI.h>
 #include <XPT2046_Touchscreen.h>
+#include <Preferences.h>
 #include "theme.h"
 #include "ble_kbd.h"
 
 LV_IMAGE_DECLARE(ic_dictate);
 LV_IMAGE_DECLARE(ic_transform);
 LV_IMAGE_DECLARE(ic_handsfree);
+LV_IMAGE_DECLARE(ic_trash);
+LV_IMAGE_DECLARE(ic_return);
 LV_IMAGE_DECLARE(logo_woodwerd);   // 240x111 A8 badge, tools/make_logo.py
 
 // ---------------- hardware ----------------
-#define SCREEN_W 320
-#define SCREEN_H 240
+// Screen size follows the orientation (landscape 320 x 240, portrait 240 x 320), set at runtime.
+static int SCREEN_W = 320;
+static int SCREEN_H = 240;
 #define XPT_IRQ 36
 #define XPT_MOSI 32
 #define XPT_MISO 39
@@ -38,8 +43,8 @@ LV_IMAGE_DECLARE(logo_woodwerd);   // 240x111 A8 badge, tools/make_logo.py
 #define LDR_PIN 34           // light sensor (GT36516 LDR) under the lid's light pipe; reads higher when darker
 #define BL_CH 0
 #ifndef PANEL_ROTATION
-#define PANEL_ROTATION 1     // 1 = landscape (USB on the left), 3 = landscape flipped
-#endif
+#define PANEL_ROTATION 1     // first-boot orientation. 1 = landscape (USB on the left), 3 = landscape flipped,
+#endif                       // 0 = portrait (USB cable at the bottom), 2 = portrait flipped. About changes it.
 #ifndef DIM_AFTER_MS
 #define DIM_AFTER_MS 0       // 0 = always full brightness (the CYD is USB-powered, nothing to save).
 #endif                       // Set e.g. -DDIM_AFTER_MS=45000 to dim after idle; it never turns off.
@@ -80,21 +85,30 @@ LV_IMAGE_DECLARE(logo_woodwerd);   // 240x111 A8 badge, tools/make_logo.py
 
 
 // Wispr Transforms (Settings → Transforms). Act on the current selection. Add a row = a new button.
-struct Transform { const char* name; const char* hint; uint8_t mods; uint8_t key; };
+struct Transform { const char* name; const char* keys; const char* note; uint8_t mods; uint8_t key; };
 static const Transform XFORMS[] = {
-  { "PROMPT ENGINEER", OPT_NAME " 2  ·  built in",    MOD_OPT, KEY_2 },
-  { "DRAWING NOTE",    OPT_NAME " 3  ·  callouts",    MOD_OPT, KEY_3 },
-  { "CLIENT EMAIL",    OPT_NAME " 4  ·  client tone", MOD_OPT, KEY_4 },
+  { "PROMPT ENGINEER", OPT_NAME " 2", "built in",    MOD_OPT, KEY_2 },
+  { "DRAWING NOTE",    OPT_NAME " 3", "callouts",    MOD_OPT, KEY_3 },
+  { "CLIENT EMAIL",    OPT_NAME " 4", "client tone", MOD_OPT, KEY_4 },
 };
 #define N_XFORMS (sizeof(XFORMS) / sizeof(XFORMS[0]))
 
-TFT_eSPI tft = TFT_eSPI(SCREEN_W, SCREEN_H);
+TFT_eSPI tft = TFT_eSPI(320, 240);
 SPIClass touchSpi = SPIClass(VSPI);
 XPT2046_Touchscreen touch(XPT_CS, XPT_IRQ);
 uint16_t tMinX = 300, tMaxX = 3800, tMinY = 300, tMaxY = 3800;
 
-#define DRAW_BUF_SIZE (SCREEN_W * SCREEN_H / 10 * (LV_COLOR_DEPTH / 8))
+#define DRAW_BUF_SIZE (320 * 240 / 10 * (LV_COLOR_DEPTH / 8))   // same pixel count in both orientations
 static uint8_t* draw_buf;
+static lv_display_t* disp = nullptr;
+static Preferences uiPrefs;
+
+// ---------------- orientation ----------------
+// rot is the panel rotation: 1 / 3 landscape (USB left / right), 0 / 2 portrait (USB cable at the bottom /
+// top). Saved in NVS ("flowctrl"/"rot"), so it survives power cycles and app-only updates (0x10000).
+// A full image at 0x0 blanks NVS and the board comes back in PANEL_ROTATION.
+static uint8_t rot = PANEL_ROTATION;
+static inline bool portrait() { return (rot & 1) == 0; }
 static uint32_t lastTick = 0;
 
 // ---------------- state ----------------
@@ -108,11 +122,12 @@ static float ldrAvg = -1;                          // smoothed (~1 s)
 static lv_obj_t* lblLight = nullptr;               // live readout on the About page
 
 // ---------------- widgets ----------------
-static lv_obj_t *dot, *lblTitle, *btnDiscard, *lblDiscard;
+static lv_obj_t *dot, *lblTitle, *btnDiscard, *lblDiscard, *icoTrash = nullptr, *lblDiscardTxt = nullptr;
 static lv_obj_t *btnPtt, *lblStatus;          // the black pill IS the talk button
-static lv_obj_t *btnHf, *icoHf;
+static lv_obj_t *btnHf, *icoHf, *lblPill = nullptr, *lblHfTxt = nullptr;   // lblPill: portrait only, the words inside the pill
 static lv_obj_t *btnSend, *lblSend;
 static lv_obj_t *pageDictate, *pageXf, *segKnob, *tabDictate, *tabXf, *icoDictate, *icoXf;
+static lv_obj_t* pageDot[2];   // portrait page indicator (replaces the lozenge)
 static int knobX[2];
 static int page = 0;
 static lv_obj_t *toast, *toastTxt;
@@ -201,6 +216,7 @@ static void forget_event(lv_event_t* e) {
     forgetArmed = true;
     lv_label_set_text(forgetLbl, "TAP AGAIN TO FORGET");
     lv_obj_set_style_bg_opa(forgetBtn, LV_OPA_COVER, 0);
+    lv_obj_set_style_bg_opa(forgetBtn, LV_OPA_COVER, LV_STATE_PRESSED);
     lv_obj_set_style_text_color(forgetLbl, C(C_ACCENT_TEXT), 0);
     return;
   }
@@ -217,28 +233,73 @@ static void about_row(int y, const char* k, const char* v, bool mono, bool last)
   lv_obj_align(b, LV_ALIGN_TOP_RIGHT, -16, y + 4);
   if (!last) box(overlay, 16, y + 25, SCREEN_W - 32, 1, C_BORDER, 0);
 }
+
+// Orientation. Landscape <-> portrait, and FLIP turns either one round (USB on the other side).
+// Applied after the tap's event has finished (lv_async_call), because the rebuild deletes the
+// button that was tapped.
+static void set_rotation(uint8_t r);
+static void ui_build(bool splash);
+static void rotate_async(void* p) {
+  const uint8_t r = (uint8_t)(uintptr_t)p;
+  if (cap == CAP_PTT || r == rot) return;
+  uiPrefs.putUChar("rot", r);
+  overlay = nullptr; lblLight = nullptr; forgetBtn = nullptr; forgetLbl = nullptr;
+  lv_obj_clean(lv_layer_top());
+  lv_obj_clean(lv_screen_active());
+  set_rotation(r);
+  ui_build(false);
+  show_toast(portrait() ? (rot == 0 ? "Portrait  ·  USB at the bottom" : "Portrait  ·  USB at the top")
+                        : (rot == 1 ? "Landscape  ·  USB on the left" : "Landscape  ·  USB on the right"), 2200);
+}
+static void orient_event(lv_event_t* e) {
+  if (lv_event_get_code(e) != LV_EVENT_CLICKED) return;
+  lv_async_call(rotate_async, (void*)(uintptr_t)(portrait() ? 1 : 0));   // to the default of the other shape
+}
+static void flip_event(lv_event_t* e) {
+  if (lv_event_get_code(e) != LV_EVENT_CLICKED) return;
+  lv_async_call(rotate_async, (void*)(uintptr_t)(rot ^ 2));            // 1 <-> 3, 0 <-> 2
+}
+static lv_obj_t* outline_button(lv_obj_t* parent, int x, int y, int w, int h, const char* txt,
+                                uint32_t ink, lv_event_cb_t cb) {
+  lv_obj_t* b = lv_button_create(parent);
+  lv_obj_remove_style_all(b);
+  lv_obj_set_pos(b, x, y); lv_obj_set_size(b, w, h);
+  lv_obj_set_style_radius(b, 8, 0);
+  lv_obj_set_style_border_width(b, 1, 0);
+  lv_obj_set_style_border_color(b, C(ink == C_ACCENT_INK ? C_ACCENT : C_TEXT_2), 0);
+  lv_obj_set_style_bg_color(b, C(C_SURFACE), 0);
+  lv_obj_set_style_bg_opa(b, LV_OPA_TRANSP, 0);
+  lv_obj_set_style_bg_opa(b, LV_OPA_COVER, LV_STATE_PRESSED);
+  lv_obj_t* l = label(b, txt, F_SMALL, ink);
+  lv_obj_center(l);
+  lv_obj_add_event_cb(b, cb, LV_EVENT_CLICKED, nullptr);
+  return b;
+}
+
 static void show_about(bool splash) {
   if (overlay) return;
   overlay = box(lv_layer_top(), 0, 0, SCREEN_W, SCREEN_H, C_BG, 0);
   lv_obj_add_flag(overlay, LV_OBJ_FLAG_CLICKABLE);
   if (!splash) lv_obj_add_event_cb(overlay, overlay_close, LV_EVENT_CLICKED, nullptr);
+  const bool tall = portrait();
 
   if (splash) {
     // badge logo, then the two things a new owner needs: which firmware, and which chord to set
     static char ver[40];
     snprintf(ver, sizeof(ver), "Flow Ctrl  ·  v" FW_VERSION "  ·  " HOST_NAME);
+    const int y0 = tall ? 56 : 16;                  // matches the badge painted before LVGL starts
     lv_obj_t* logo = lv_image_create(overlay);
     lv_image_set_src(logo, &logo_woodwerd);
     lv_obj_set_style_image_recolor(logo, C(C_TEXT), 0);
     lv_obj_set_style_image_recolor_opa(logo, LV_OPA_COVER, 0);
-    lv_obj_align(logo, LV_ALIGN_TOP_MID, 0, 16);
+    lv_obj_align(logo, LV_ALIGN_TOP_MID, 0, y0);
     lv_obj_t* v = label(overlay, ver, F_SMALL, C_TEXT_2);
-    lv_obj_align(v, LV_ALIGN_TOP_MID, 0, 140);
+    lv_obj_align(v, LV_ALIGN_TOP_MID, 0, y0 + 124);
     lv_obj_t* k = label(overlay, "PUSH TO TALK", F_SMALL, C_TEXT_3);
     lv_obj_set_style_text_letter_space(k, 1, 0);
-    lv_obj_align(k, LV_ALIGN_TOP_MID, 0, 170);
+    lv_obj_align(k, LV_ALIGN_TOP_MID, 0, y0 + 154);
     lv_obj_t* c = label(overlay, PTT_LABEL, F_TITLE, C_ACCENT_INK);
-    lv_obj_align(c, LV_ALIGN_TOP_MID, 0, 190);
+    lv_obj_align(c, LV_ALIGN_TOP_MID, 0, y0 + 174);
     lv_timer_create(splash_timer, SPLASH_MS, nullptr);
     return;
   }
@@ -246,35 +307,37 @@ static void show_about(bool splash) {
   lv_obj_t* t = label(overlay, "About", F_TITLE, C_TEXT);
   lv_obj_set_pos(t, 16, 14);
   // Forget pairing: red outline, two taps, so a stray finger can't do it.
+  // Landscape: top right. Portrait: full width under the screen controls.
   forgetArmed = false;
-  forgetBtn = lv_button_create(overlay);
-  lv_obj_remove_style_all(forgetBtn);
-  lv_obj_set_size(forgetBtn, 150, 32);
-  lv_obj_align(forgetBtn, LV_ALIGN_TOP_RIGHT, -12, 10);
+  if (tall) forgetBtn = outline_button(overlay, 12, 236, SCREEN_W - 24, 40, "FORGET PAIRING", C_ACCENT_INK, forget_event);
+  else      forgetBtn = outline_button(overlay, SCREEN_W - 162, 10, 150, 32, "FORGET PAIRING", C_ACCENT_INK, forget_event);
   lv_obj_set_style_bg_color(forgetBtn, C(C_ACCENT), 0);
-  lv_obj_set_style_bg_opa(forgetBtn, LV_OPA_TRANSP, 0);
-  lv_obj_set_style_radius(forgetBtn, 8, 0);
-  lv_obj_set_style_border_width(forgetBtn, 1, 0);
-  lv_obj_set_style_border_color(forgetBtn, C(C_ACCENT), 0);
-  forgetLbl = label(forgetBtn, "FORGET PAIRING", F_SMALL, C_ACCENT_INK);
-  lv_obj_center(forgetLbl);
-  lv_obj_add_event_cb(forgetBtn, forget_event, LV_EVENT_CLICKED, nullptr);
+  forgetLbl = lv_obj_get_child(forgetBtn, 0);
 
-  static char link[40];
-  snprintf(link, sizeof link, BLE_NAME "  ·  %s", BleKbd::connected() ? "connected" : "pairing");
-  int y = 50;
+  int y = 48;
   about_row(y, "Version", "v" FW_VERSION "  ·  " HOST_NAME, true, false);  y += 26;
   about_row(y, "Push to talk", PTT_LABEL, true, false);                  y += 26;
-  about_row(y, "Hands-free", "tap the hand, tap bar to stop", false, false);   y += 26;
   about_row(y, "Light sensor", "", true, false);
   lblLight = lv_obj_get_child(overlay, -1 - 1);   // the value label about_row just made (the hairline is last)
   y += 26;
-  about_row(y, "Bluetooth", link, false, false);                         y += 26;
-  about_row(y, "Address", BleKbd::address(), true, true);
-  lv_obj_t* footL = label(overlay, "WOODWERD LLC", F_SMALL, C_TEXT_3);
-  lv_obj_align(footL, LV_ALIGN_BOTTOM_LEFT, 16, -10);
-  lv_obj_t* footR = label(overlay, "tap anywhere to close", F_SMALL, C_TEXT_3);
-  lv_obj_align(footR, LV_ALIGN_BOTTOM_RIGHT, -16, -10);
+  about_row(y, "Bluetooth", BleKbd::connected() ? "connected" : "pairing", false, false);   y += 26;
+  about_row(y, "Address", BleKbd::address(), true, true);                y += portrait() ? 34 : 30;
+
+  // Screen: switch shape, or turn it round. Both are remembered.
+  const int bw = (SCREEN_W - 24 - 10) / 2, bh = tall ? 40 : 34, bx = tall ? 12 : 16;
+  const int bw2 = tall ? bw : (SCREEN_W - 32 - 8) / 2, gap = tall ? 10 : 8;
+  outline_button(overlay, bx, y, bw2, bh, tall ? "LANDSCAPE" : "PORTRAIT", C_TEXT, orient_event);
+  outline_button(overlay, bx + bw2 + gap, y, bw2, bh, "FLIP", C_TEXT, flip_event);
+
+  lv_obj_t* footL = label(overlay, "WOODWERD LLC", F_TINY, C_TEXT_3);
+  lv_obj_t* footR = label(overlay, "tap anywhere to close", F_TINY, C_TEXT_3);
+  if (tall) {   // stacked and centred; side by side doesn't fit 240 px
+    lv_obj_align(footL, LV_ALIGN_BOTTOM_MID, 0, -26);
+    lv_obj_align(footR, LV_ALIGN_BOTTOM_MID, 0, -8);
+  } else {
+    lv_obj_align(footL, LV_ALIGN_BOTTOM_LEFT, 16, -5);
+    lv_obj_align(footR, LV_ALIGN_BOTTOM_RIGHT, -16, -5);
+  }
 }
 static void title_event(lv_event_t* e) {
   if (lv_event_get_code(e) == LV_EVENT_LONG_PRESSED) show_about(false);
@@ -306,25 +369,41 @@ static void render_state() {
   const bool on = BleKbd::connected();
   const bool ptt = cap == CAP_PTT, hf = cap == CAP_HANDSFREE;
 
-  // top bar: dot + title
+  // top bar: dot + title (landscape) or dot + one status line (portrait)
   lv_obj_set_style_bg_color(dot, C(!on ? C_WARN : hf ? C_ACCENT : C_OK), 0);
-  lv_label_set_text(lblTitle, !on ? "Pairing…" : "Flow Ctrl");   // the red dot + red chip say hands-free
-
-  // the line under the pill
-  static char buf[40];
-  lv_obj_set_style_text_font(lblStatus, F_TINY, 0);
-  lv_obj_set_style_text_color(lblStatus, C(on ? C_TEXT : C_TEXT_2), 0);
-  if (!on) {
-    lv_label_set_text(lblStatus, BleKbd::needsRepair() ? "Remove Flow Ctrl on the computer, then add it again"
-                                                       : "Add Flow Ctrl in Bluetooth settings");
-  } else if (ptt) {
-    lv_label_set_text(lblStatus, "LISTENING  ·  RELEASE TO PASTE");
-  } else if (hf) {
-    uint32_t sec = (millis() - capStart) / 1000;
-    snprintf(buf, sizeof buf, "%lu:%02lu  ·  TAP TO STOP", (unsigned long)(sec / 60), (unsigned long)(sec % 60));
-    lv_label_set_text(lblStatus, buf);
+  static char buf[64];
+  const char* pairHelp = BleKbd::needsRepair() ? "Remove Flow Ctrl on the computer, then add it again"
+                                               : "Add Flow Ctrl in Bluetooth settings";
+  if (portrait()) {
+    // Portrait (the layout approved 2026-10-23): one quiet status line on top, the words live in the pill.
+    if (!on) lv_label_set_text(lblTitle, pairHelp);
+    else if (ptt) lv_label_set_text(lblTitle, "Release to paste");
+    else if (hf) {
+      uint32_t sec = (millis() - capStart) / 1000;
+      snprintf(buf, sizeof buf, "Hands-free  ·  %lu:%02lu", (unsigned long)(sec / 60), (unsigned long)(sec % 60));
+      lv_label_set_text(lblTitle, buf);
+    } else lv_label_set_text(lblTitle, "Ready");
+    lv_obj_set_style_text_color(lblTitle, C(on ? C_TEXT_2 : C_TEXT), 0);
+    lv_obj_set_style_text_color(lblHfTxt, C(hf ? C_ACCENT_TEXT : C_ACCENT_INK), 0);
+    lv_obj_set_style_text_opa(lblHfTxt, on ? LV_OPA_COVER : LV_OPA_40, 0);
+    lv_label_set_text(lblPill, !on ? "Pair first" : ptt ? "Listening" : hf ? "Tap to stop" : "Hold to talk");
   } else {
-    lv_label_set_text(lblStatus, "HOLD TO TALK");
+    lv_label_set_text(lblTitle, !on ? "Pairing…" : "Flow Ctrl");   // the red dot + red chip say hands-free
+
+    // the line under the pill
+    lv_obj_set_style_text_font(lblStatus, F_TINY, 0);
+    lv_obj_set_style_text_color(lblStatus, C(on ? C_TEXT : C_TEXT_2), 0);
+    if (!on) {
+      lv_label_set_text(lblStatus, pairHelp);
+    } else if (ptt) {
+      lv_label_set_text(lblStatus, "LISTENING  ·  RELEASE TO PASTE");
+    } else if (hf) {
+      uint32_t sec = (millis() - capStart) / 1000;
+      snprintf(buf, sizeof buf, "%lu:%02lu  ·  TAP TO STOP", (unsigned long)(sec / 60), (unsigned long)(sec % 60));
+      lv_label_set_text(lblStatus, buf);
+    } else {
+      lv_label_set_text(lblStatus, "HOLD TO TALK");
+    }
   }
 
   // talk pill: a ring around it while held
@@ -337,7 +416,16 @@ static void render_state() {
   lv_obj_set_style_image_opa(icoHf, on ? LV_OPA_COVER : LV_OPA_40, 0);
 
   // trash chip: becomes a red ✕ (cancel) during hands-free
-  lv_label_set_text(lblDiscard, hf ? LV_SYMBOL_CLOSE : LV_SYMBOL_TRASH);
+  if (portrait()) {
+    if (hf) { lv_obj_add_flag(icoTrash, LV_OBJ_FLAG_HIDDEN); lv_obj_remove_flag(lblDiscard, LV_OBJ_FLAG_HIDDEN); }
+    else    { lv_obj_remove_flag(icoTrash, LV_OBJ_FLAG_HIDDEN); lv_obj_add_flag(lblDiscard, LV_OBJ_FLAG_HIDDEN); }
+    lv_label_set_text(lblDiscardTxt, hf ? "Cancel" : "Discard");
+    lv_obj_set_style_text_color(lblDiscardTxt, C(hf ? C_ACCENT_INK : C_TEXT_2), 0);
+    lv_obj_set_style_border_color(btnDiscard, C(hf ? C_ACCENT : C_TEXT_3), 0);
+    lv_obj_set_style_image_opa(icoTrash, on ? LV_OPA_COVER : LV_OPA_40, 0);
+  } else {
+    lv_label_set_text(lblDiscard, hf ? LV_SYMBOL_CLOSE : LV_SYMBOL_TRASH);
+  }
   lv_obj_set_style_bg_color(btnDiscard, C(hf ? C_ACCENT_TINT : C_SURFACE), 0);
   lv_obj_set_style_text_color(lblDiscard, C(hf ? C_ACCENT_INK : C_TEXT_2), 0);
 
@@ -356,7 +444,7 @@ static void render_state() {
 // red while hands-free.
 static void wave_tick(lv_timer_t*) {
   const bool live = cap != CAP_IDLE;
-  const int maxH = 54;
+  const int maxH = portrait() ? 46 : 54;   // portrait leaves room for the words under the bars
   for (int i = 0; i < N_BARS; i++) {
     int target;
     if (live) {
@@ -455,6 +543,10 @@ static void set_page(int p) {
   page = p;
   if (p == 0) { lv_obj_remove_flag(pageDictate, LV_OBJ_FLAG_HIDDEN); lv_obj_add_flag(pageXf, LV_OBJ_FLAG_HIDDEN); }
   else        { lv_obj_add_flag(pageDictate, LV_OBJ_FLAG_HIDDEN);    lv_obj_remove_flag(pageXf, LV_OBJ_FLAG_HIDDEN); }
+  if (portrait()) {
+    for (int i = 0; i < 2; i++) lv_obj_set_style_bg_color(pageDot[i], C(i == p ? C_TEXT : C_BORDER), 0);
+    return;
+  }
   lv_anim_t a; lv_anim_init(&a);
   lv_anim_set_var(&a, segKnob);
   lv_anim_set_values(&a, lv_obj_get_x(segKnob), knobX[p]);
@@ -464,6 +556,9 @@ static void set_page(int p) {
   lv_anim_start(&a);
   lv_obj_set_style_image_recolor(icoDictate, C(p == 0 ? C_BG : C_TEXT_2), 0);
   lv_obj_set_style_image_recolor(icoXf,      C(p == 1 ? C_BG : C_TEXT_2), 0);
+}
+static void dots_event(lv_event_t* e) {   // portrait: tap the two dots to switch page
+  if (lv_event_get_code(e) == LV_EVENT_CLICKED) set_page(page ^ 1);
 }
 static void tab_event(lv_event_t* e) {
   if (lv_event_get_code(e) == LV_EVENT_CLICKED) set_page((int)(intptr_t)lv_event_get_user_data(e));
@@ -498,18 +593,13 @@ static lv_obj_t* make_button(lv_obj_t* parent, int x, int y, int w, int h) {
   return b;
 }
 
-// Layout, landscape 320 x 240:
+// Landscape, 320 x 240 (unchanged from v0.9.7):
 //   top bar    y 6–46   dot + title (long-press → About) · hands-free chip · trash chip · [dictate | transform] switch
 //   Dictate    y 54–132 the black pill = HOLD TO TALK, waveform inside
 //              y 142    status line, 12 px (HOLD TO TALK / LISTENING / m:ss / pairing help)
 //              y 166–232 SEND, full width. During hands-free a tap on the pill stops it.
 //   Transform  y 54–174 2 x 2 transforms (first one black) · y 182–222 SELECT ALL · VIEW DIFF
-static void ui_build() {
-  lv_obj_t* scr = lv_screen_active();
-  lv_obj_set_style_bg_color(scr, C(C_BG), 0);
-  lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
-  lv_obj_remove_flag(scr, LV_OBJ_FLAG_SCROLLABLE);
-
+static void build_landscape(lv_obj_t* scr) {
   // --- pages (full-screen transparent containers; the top bar and toast live on scr) ---
   pageDictate = box(scr, 0, 0, SCREEN_W, SCREEN_H, C_BG, 0); lv_obj_set_style_bg_opa(pageDictate, LV_OPA_TRANSP, 0);
   pageXf      = box(scr, 0, 0, SCREEN_W, SCREEN_H, C_BG, 0); lv_obj_set_style_bg_opa(pageXf, LV_OPA_TRANSP, 0);
@@ -614,7 +704,9 @@ static void ui_build() {
       }
       lv_obj_t* n = label(b, XFORMS[i].name, F_SMALL, lead ? C_WAVE_LIVE : C_TEXT);
       lv_obj_align(n, LV_ALIGN_CENTER, 0, -9);
-      lv_obj_t* h = label(b, XFORMS[i].hint, F_SMALL, C_TEXT_3);
+      static char hint[N_XFORMS][40];
+      snprintf(hint[i], sizeof hint[i], "%s  ·  %s", XFORMS[i].keys, XFORMS[i].note);
+      lv_obj_t* h = label(b, hint[i], F_SMALL, C_TEXT_3);
       lv_obj_align(h, LV_ALIGN_CENTER, 0, 11);
       lv_obj_add_event_cb(b, xf_event, LV_EVENT_CLICKED, (void*)&XFORMS[i]);
     }
@@ -636,20 +728,178 @@ static void ui_build() {
     util(gx, "SELECT ALL", select_all_event);
     util(gx + gw + g, "VIEW DIFF", diff_event);
   }
+}
+
+// Portrait, 240 x 320 — the layout approved 2026-10-23 for the dock (all Ctrl boards stand portrait).
+// Small, secondary things high; the two big buttons own the bottom. No title, no chips row, no lozenge.
+//   y 10–24    dot + one status line (long-press → About) · two page dots at the right (tap → Transform);
+//              toasts appear over this line
+//   y 34–88    HANDS-FREE (hand icon) · DISCARD (trash icon), 103 x 54 each
+//   y 98–223   the black pill = HOLD TO TALK, waveform + words inside
+//   y 233–310  SEND, full width, return-key icon
+// Pill and Send split their shared height 125 : 77 (the golden section, to the pixel).
+//   Transform  y 34–222 three full-width rows (first black) · y 233–310 SELECT ALL · VIEW DIFF
+static void build_portrait(lv_obj_t* scr) {
+  const int px = 12, pw = SCREEN_W - 24, halfW = (pw - 10) / 2;
+  pageDictate = box(scr, 0, 0, SCREEN_W, SCREEN_H, C_BG, 0); lv_obj_set_style_bg_opa(pageDictate, LV_OPA_TRANSP, 0);
+  pageXf      = box(scr, 0, 0, SCREEN_W, SCREEN_H, C_BG, 0); lv_obj_set_style_bg_opa(pageXf, LV_OPA_TRANSP, 0);
+  segKnob = nullptr; icoDictate = nullptr; icoXf = nullptr; lblStatus = nullptr;
+
+  // --- status line ---
+  dot = box(scr, px, 13, 8, 8, C_WARN, 4);
+  lblTitle = label(scr, "", F_TINY, C_TEXT_2);
+  lv_obj_set_pos(lblTitle, px + 14, 9);
+  lv_obj_set_width(lblTitle, 156);
+  lv_label_set_long_mode(lblTitle, LV_LABEL_LONG_SCROLL_CIRCULAR);
+  lv_obj_t* titleHit = box(scr, 0, 0, 176, 32, C_BG, 0);      // long-press → About page
+  lv_obj_set_style_bg_opa(titleHit, LV_OPA_TRANSP, 0);
+  lv_obj_add_flag(titleHit, LV_OBJ_FLAG_CLICKABLE);
+  lv_obj_add_event_cb(titleHit, title_event, LV_EVENT_LONG_PRESSED, nullptr);
+  lv_obj_t* dotsHit = box(scr, 180, 0, SCREEN_W - 180, 32, C_BG, 0);   // tap → other page
+  lv_obj_set_style_bg_opa(dotsHit, LV_OPA_TRANSP, 0);
+  lv_obj_add_flag(dotsHit, LV_OBJ_FLAG_CLICKABLE);
+  lv_obj_add_event_cb(dotsHit, dots_event, LV_EVENT_CLICKED, nullptr);
+  pageDot[0] = box(dotsHit, SCREEN_W - 180 - px - 20, 14, 6, 6, C_TEXT, 3);
+  pageDot[1] = box(dotsHit, SCREEN_W - 180 - px - 6,  14, 6, 6, C_BORDER, 3);
+
+  auto icon = [&](lv_obj_t* parent, const lv_image_dsc_t* src, uint32_t color, int px_size = 22) {
+    lv_obj_t* im = lv_image_create(parent);
+    lv_image_set_src(im, src);
+    lv_obj_set_style_image_recolor(im, C(color), 0);
+    lv_obj_set_style_image_recolor_opa(im, LV_OPA_COVER, 0);
+    lv_image_set_scale(im, px_size * 256 / 28);          // icons are drawn at 28 px
+    lv_image_set_inner_align(im, LV_IMAGE_ALIGN_CENTER);
+    lv_obj_set_size(im, px_size, px_size);
+    return im;
+  };
+  auto row_flex = [](lv_obj_t* b, int gap) {
+    lv_obj_set_layout(b, LV_LAYOUT_FLEX);
+    lv_obj_set_flex_flow(b, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(b, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_column(b, gap, 0);
+  };
+
+  // --- top row: hands-free · discard ---
+  const int ty = 34, th = 54;
+  btnHf = make_button(pageDictate, px, ty, halfW, th);
+  lv_obj_set_style_radius(btnHf, 12, 0);
+  lv_obj_set_style_bg_color(btnHf, C(C_ACCENT), 0);
+  lv_obj_set_style_bg_opa(btnHf, LV_OPA_TRANSP, 0);
+  lv_obj_set_style_bg_color(btnHf, C(C_ACCENT_TINT), LV_STATE_PRESSED);
+  lv_obj_set_style_bg_opa(btnHf, LV_OPA_COVER, LV_STATE_PRESSED);
+  lv_obj_set_style_bg_opa(btnHf, LV_OPA_TRANSP, LV_STATE_DISABLED);
+  lv_obj_set_style_border_opa(btnHf, LV_OPA_40, LV_STATE_DISABLED);
+  lv_obj_set_style_border_width(btnHf, 2, 0);
+  lv_obj_set_style_border_color(btnHf, C(C_ACCENT), 0);
+  row_flex(btnHf, 4);
+  icoHf = icon(btnHf, &ic_handsfree, C_ACCENT_INK);
+  lblHfTxt = label(btnHf, "Hands-free", F_TINY, C_ACCENT_INK);
+  lv_obj_add_event_cb(btnHf, hf_event, LV_EVENT_ALL, nullptr);
+
+  btnDiscard = make_button(pageDictate, px + halfW + 10, ty, halfW, th);
+  lv_obj_set_style_radius(btnDiscard, 12, 0);
+  lv_obj_set_style_border_width(btnDiscard, 2, 0);
+  lv_obj_set_style_border_color(btnDiscard, C(C_TEXT_3), 0);
+  row_flex(btnDiscard, 4);
+  icoTrash = icon(btnDiscard, &ic_trash, C_TEXT_2);
+  lblDiscard = label(btnDiscard, LV_SYMBOL_CLOSE, &lv_font_montserrat_14, C_ACCENT_INK);   // shown during hands-free
+  lv_obj_add_flag(lblDiscard, LV_OBJ_FLAG_HIDDEN);
+  lblDiscardTxt = label(btnDiscard, "Discard", F_TINY, C_TEXT_2);
+  lv_obj_add_event_cb(btnDiscard, discard_event, LV_EVENT_ALL, nullptr);
+
+  // --- the pill ---
+  const int py = 98, ph = 125;
+  btnPtt = make_button(pageDictate, px, py, pw, ph);
+  lv_obj_set_style_radius(btnPtt, 52, 0);
+  lv_obj_set_style_bg_color(btnPtt, C(C_PILL), 0);
+  lv_obj_set_style_bg_color(btnPtt, C(C_PILL), LV_STATE_PRESSED);
+  lv_obj_set_style_border_width(btnPtt, 1, 0);
+  lv_obj_set_style_border_color(btnPtt, C(C_PILL_RIM), 0);
+  lv_obj_set_style_outline_color(btnPtt, C(C_TEXT), 0);
+  lv_obj_set_style_outline_pad(btnPtt, 3, 0);
+  lv_obj_set_style_outline_width(btnPtt, 0, 0);
+  const int bw = 6, gap = 7, span = N_BARS * bw + (N_BARS - 1) * gap;
+  for (int i = 0; i < N_BARS; i++) {
+    barH[i] = 6;
+    bars[i] = box(btnPtt, 0, 0, bw, 6, C_WAVE_IDLE, 3);
+    lv_obj_align(bars[i], LV_ALIGN_LEFT_MID, (pw - span) / 2 + i * (bw + gap), -14);
+  }
+  lblPill = label(btnPtt, "Hold to talk", F_LABEL, C_WAVE_LIVE);
+  lv_obj_align(lblPill, LV_ALIGN_CENTER, 0, 34);
+  lv_obj_add_event_cb(btnPtt, ptt_event, LV_EVENT_ALL, nullptr);
+
+  // --- send ---
+  const int ry = 233, rh = 77;
+  btnSend = make_button(pageDictate, px, ry, pw, rh);
+  lv_obj_set_style_radius(btnSend, 12, 0);
+  lv_obj_set_style_bg_opa(btnSend, LV_OPA_TRANSP, 0);
+  lv_obj_set_style_bg_opa(btnSend, LV_OPA_COVER, LV_STATE_PRESSED);
+  lv_obj_set_style_border_width(btnSend, 2, 0);
+  lv_obj_set_style_border_color(btnSend, C(C_TEXT), 0);
+  row_flex(btnSend, 8);
+  icon(btnSend, &ic_return, C_TEXT, 24);
+  lblSend = label(btnSend, "Send", F_LABEL, C_TEXT);
+  lv_obj_add_event_cb(btnSend, send_event, LV_EVENT_ALL, nullptr);
+
+  // --- Transform: three full-width rows (first black) + SELECT ALL · VIEW DIFF ---
+  for (size_t i = 0; i < N_XFORMS && i < 3; i++) {
+    lv_obj_t* b = make_button(pageXf, px, 34 + i * 66, pw, 56);
+    lv_obj_set_style_radius(b, 12, 0);
+    const bool lead = i == 0;
+    if (lead) {
+      lv_obj_set_style_bg_color(b, C(C_PILL), 0);
+      lv_obj_set_style_bg_color(b, C(C_TEXT_2), LV_STATE_PRESSED);
+    }
+    lv_obj_t* n = label(b, XFORMS[i].name, F_SMALL, lead ? C_WAVE_LIVE : C_TEXT);
+    lv_obj_align(n, LV_ALIGN_LEFT_MID, 14, 0);
+    lv_obj_t* k = label(b, XFORMS[i].keys, F_TINY, C_TEXT_3);
+    lv_obj_align(k, LV_ALIGN_RIGHT_MID, -14, 0);
+    lv_obj_add_event_cb(b, xf_event, LV_EVENT_CLICKED, (void*)&XFORMS[i]);
+  }
+  auto util = [&](int x, const char* txt, lv_event_cb_t cb) {
+    lv_obj_t* b = make_button(pageXf, x, 233, halfW, 77);
+    lv_obj_set_style_radius(b, 12, 0);
+    lv_obj_set_style_bg_opa(b, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_bg_opa(b, LV_OPA_COVER, LV_STATE_PRESSED);
+    lv_obj_set_style_border_width(b, 1, 0); lv_obj_set_style_border_color(b, C(C_BORDER), 0);
+    lv_obj_t* l = label(b, txt, F_SMALL, C_TEXT); lv_obj_center(l);
+    lv_obj_add_event_cb(b, cb, LV_EVENT_CLICKED, nullptr);
+  };
+  util(px, "SELECT ALL", select_all_event);
+  util(px + halfW + 10, "VIEW DIFF", diff_event);
+}
+
+static void ui_build(bool splash) {
+  lv_obj_t* scr = lv_screen_active();
+  lv_obj_set_style_bg_color(scr, C(C_BG), 0);
+  lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
+  lv_obj_remove_flag(scr, LV_OBJ_FLAG_SCROLLABLE);
+  if (portrait()) build_portrait(scr); else build_landscape(scr);
   set_page(0);
 
-  // --- toast: a small black pill over the status line ---
-  toast = box(scr, 0, 0, SCREEN_W - 24, 30, C_TEXT, 15);
-  lv_obj_align(toast, LV_ALIGN_TOP_MID, 0, 134);
+  // --- toast: a small black pill over the status line (landscape) / the foot of the pill (portrait) ---
+  toast = box(scr, 0, 0, SCREEN_W - 24, portrait() ? 28 : 30, C_TEXT, 15);
+  lv_obj_align(toast, LV_ALIGN_TOP_MID, 0, portrait() ? 2 : 134);
   toastTxt = label(toast, "", F_SMALL, C_BG);
   lv_obj_set_width(toastTxt, SCREEN_W - 48);
   lv_label_set_long_mode(toastTxt, LV_LABEL_LONG_SCROLL_CIRCULAR);
   lv_obj_set_style_text_align(toastTxt, LV_TEXT_ALIGN_CENTER, 0);
   lv_obj_center(toastTxt);
   lv_obj_add_flag(toast, LV_OBJ_FLAG_HIDDEN);
+  toastUntil = 0;
 
   render_state();
-  show_about(true);   // boot splash
+  if (splash) show_about(true);   // boot splash
+}
+
+static void set_rotation(uint8_t r) {
+  rot = r;
+  SCREEN_W = portrait() ? 240 : 320;
+  SCREEN_H = portrait() ? 320 : 240;
+  tft.setRotation(rot);
+  touch.setRotation(rot);
+  tMinX = 300; tMaxX = 3800; tMinY = 300; tMaxY = 3800;   // re-learn the touch range for the new axes
+  if (disp) lv_display_set_resolution(disp, SCREEN_W, SCREEN_H);
 }
 
 // ---------------- housekeeping ----------------
@@ -659,7 +909,7 @@ static void ui_tick(lv_timer_t*) {
   if (on != wasConnected) {
     wasConnected = on;
     if (!on && cap != CAP_IDLE) cap = CAP_IDLE;   // keys are gone with the link; don't pretend
-    show_toast(on ? "Connected to Mac" : "Disconnected", 1800);
+    show_toast(on ? "Connected to " HOST_NAME : "Disconnected", 1800);
   }
   static uint8_t div = 0;
   if (++div % 5 == 0) render_state();             // 250 ms: timer text, dot blink
@@ -700,14 +950,17 @@ void setup() {
   Serial.println("Flow Ctrl v" FW_VERSION " (" HOST_NAME " build)");
   pinMode(LED_R, OUTPUT); pinMode(LED_G, OUTPUT); pinMode(LED_B, OUTPUT); led(false, false, false);
 
+  uiPrefs.begin("flowctrl", false);
+  rot = uiPrefs.getUChar("rot", PANEL_ROTATION);
+  if (rot > 3) rot = PANEL_ROTATION;
   tft.init();
-  tft.setRotation(PANEL_ROTATION);
+  set_rotation(rot);
   tft.setSwapBytes(true);
   tft.fillScreen(RGB565(C_BG));
   // Paint the badge straight to the panel before LVGL exists, so the very first thing the glass shows
   // is the splash, not a strip-by-strip reveal of the UI. LVGL redraws the identical pixels moments later.
   {
-    const int w = logo_woodwerd.header.w, h = logo_woodwerd.header.h, x0 = (SCREEN_W - w) / 2, y0 = 16;
+    const int w = logo_woodwerd.header.w, h = logo_woodwerd.header.h, x0 = (SCREEN_W - w) / 2, y0 = portrait() ? 56 : 16;
     static uint16_t line[240];
     const uint8_t* a = (const uint8_t*)logo_woodwerd.data;
     for (int y = 0; y < h; y++) {
@@ -729,11 +982,11 @@ void setup() {
 
   touchSpi.begin(XPT_CLK, XPT_MISO, XPT_MOSI, XPT_CS);
   touch.begin(touchSpi);
-  touch.setRotation(PANEL_ROTATION);
+  touch.setRotation(rot);
 
   lv_init();
   draw_buf = new uint8_t[DRAW_BUF_SIZE];
-  lv_display_t* disp = lv_display_create(SCREEN_W, SCREEN_H);
+  disp = lv_display_create(SCREEN_W, SCREEN_H);
   lv_display_set_color_format(disp, LV_COLOR_FORMAT_RGB565);
   lv_display_set_flush_cb(disp, flush_cb);
   lv_display_set_buffers(disp, draw_buf, nullptr, DRAW_BUF_SIZE, LV_DISPLAY_RENDER_MODE_PARTIAL);
@@ -742,7 +995,7 @@ void setup() {
   lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER);
   lv_indev_set_read_cb(indev, touch_read);
 
-  ui_build();
+  ui_build(true);
   lv_timer_handler();             // draw the full splash (logo + text) before the ~1 s of BLE init
   BleKbd::begin(BLE_NAME);
 

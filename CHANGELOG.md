@@ -1,5 +1,24 @@
 # Changelog
 
+## v1.0.0 — 2026-11-01
+First stable release.
+
+- **Portrait.** Long-press the title › About › **PORTRAIT** turns Flow Ctrl upright (240 × 320), for the
+  portrait dock all the Ctrl boards share. Layout: one quiet status line on top; Hands-free and Discard
+  with their icons; the big black pill with the words inside; full-width **Send** with a return-key icon.
+  The Transform page is the two dots at the top right.
+- **Flip.** About › **FLIP** turns either shape round so the USB cable can sit on the other side. Portrait
+  starts with the cable at the bottom, as Media Ctrl does.
+- The shape and side are remembered across power cycles and app-only updates (`0x10000`). A full `0x0`
+  image resets to landscape. Switching redraws in place; the Bluetooth link stays up.
+- Landscape is unchanged from v0.9.7. Its About page gains the two screen buttons; the hands-free help row
+  made room for them, and the Bluetooth row now reads just "connected" / "pairing".
+- New icons: trash and return key (`tools/make_icons.py` now writes them straight to C).
+- The simulator renders both shapes (`p_*.ppm` alongside `s_*.ppm`); `docs/screen-states-portrait.png`.
+- "Connected to Windows" on the Windows build (it said Mac).
+- The Bluetooth library is pinned to NimBLE-Arduino 2.5.1, so a new build can't pick up a newer version by accident.
+- A board on v0.9.7 can update from the Flash page and keep its Bluetooth pairing.
+
 ## Docs — 2026-11-01
 - The docs site moves to WOODWERD Digital through the shared theme: the WOODWERD Toolkit strip with an All tools menu,
   a product header with no brand mark, the mark in the footer only, ink primary buttons, and Inter and JetBrains Mono

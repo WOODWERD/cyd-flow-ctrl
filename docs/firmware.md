@@ -18,7 +18,7 @@ Build flags (add to `build_flags` or `-D` on the command line):
 | `PTT_KEY` | `KEY_T` | the key in the chord (`KEY_T`, `KEY_SPACE`, or any HID usage code) |
 | `PTT_LABEL` | `"Ctrl + Opt + T"` | what the About page shows for the chord — set it if you change the chord |
 | `HOST_WIN` | unset | Windows host: Alt/Ctrl names on screen, `Ctrl+A` for Select all (the `cyd2usb-win` env sets it; `cyd2usb-mac` is the default) |
-| `PANEL_ROTATION` | `1` | `3` flips the landscape image 180° (USB on the other side) |
+| `PANEL_ROTATION` | `1` | Shape on first boot: `1` or `3` landscape, `2` or `0` portrait. About changes it later |
 | `BLE_NAME` | `"Flow Ctrl"` | name shown in Bluetooth settings |
 | `DIM_AFTER_MS` | `0` | `0` = always full brightness (the board is USB-powered). Set e.g. `45000` to dim after idle; it never turns off |
 | `LED_QUIET` | unset | define to silence the RGB LED |
@@ -29,7 +29,7 @@ NimBLE-Arduino 2.x. ~103 KB RAM, ~890 KB flash. Compiles clean with no PSRAM.
 
 ## The screen
 
-Landscape 320 × 240, a light "paper" theme taken from Wispr Flow: warm off-white, black type, one
+Landscape 320 × 240 or portrait 240 × 320, a light "paper" theme taken from Wispr Flow: warm off-white, black type, one
 red accent kept for live or destructive states (`-DTHEME_DARK` restores the old dark colours).
 HOLD TO TALK is a 296 × 78 px black bar styled after Wispr's Flow bar, with eleven waveform bars
 inside: dots at rest, white while held (plus a ring around the bar), red during hands-free. Under it a
@@ -43,6 +43,8 @@ Colours, radii and fonts are tokens in `src/theme.h`. `tools/mock.py` renders ev
 you can retune without flashing; `tools/make_guide.py` builds the annotated screens in `docs/`.
 
 ![All states](screen-states.png)
+
+![Portrait states](screen-states-portrait.png)
 
 ## Code map
 
