@@ -1,6 +1,6 @@
 # Publishing checklist
 
-_Status: firmware v1.0.0 (Wispr-style screens, updates keep the pairing); housing v2 printed, test-fitted and released as-is. Any screen change: run `tools/sim/run.sh` to regenerate the docs images from the firmware. The housing lives in [WOODWERD/cyd-case](https://github.com/WOODWERD/cyd-case) since 2026-10-23; housing changes go there._
+_Status: firmware v1.1.0 (Wispr-style screens, updates keep the pairing); housing v2 printed, test-fitted and released as-is. Any screen change: run `tools/sim/run.sh` to regenerate the docs images from the firmware. The housing lives in [WOODWERD/cyd-case](https://github.com/WOODWERD/cyd-case) since 2026-10-23; housing changes go there._
 
 This folder is a ready-to-push GitHub repository. Steps, in order.
 
@@ -18,7 +18,7 @@ Repo description: *Push-to-talk / hands-free button for Wispr Flow on the ESP32 
 Topics worth adding: `esp32`, `cheap-yellow-display`, `cyd`, `wispr-flow`, `ble-hid`, `lvgl`, `3d-printing`.
 
 ## 2. Make a release
-Tag the version (currently `v1.0.0`) and attach from `release/`: the full images `flow-ctrl-v1.0.0-cyd2usb-mac.bin` /
+Tag the version (currently `v1.1.0`) and attach from `release/`: the full images `flow-ctrl-v1.1.0-cyd2usb-mac.bin` /
 `-win.bin` (new boards, `0x0`) and the update images `…-mac-update.bin` / `…-win-update.bin` (`0x10000`, keep the
 pairing) — and a `cyd` build if you make one — so people can flash without cloning. Keep them in `release/` too: the
 README links to them and the Flash page serves them (`tools/merge.sh` produces all of them, plus the

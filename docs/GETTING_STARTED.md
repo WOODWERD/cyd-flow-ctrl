@@ -13,17 +13,17 @@ then what each button is for.
 
 **Flash the firmware.** Plug the board in over USB-C and either use the web flasher in Chrome
 ([esptool-js](https://espressif.github.io/esptool-js/): 460800 baud, address `0x0`,
-file `release/flow-ctrl-v1.0.0-cyd2usb-mac.bin`), the [Flash page](flash/index.md), or, from a terminal:
+file `release/flow-ctrl-v1.1.0-cyd2usb-mac.bin`), the [Flash page](flash/index.md), or, from a terminal:
 
 ```
 pip install esptool
-esptool.py --chip esp32 --port /dev/cu.usbserial-XXXX --baud 460800 write_flash 0x0 flow-ctrl-v1.0.0-cyd2usb-mac.bin
+esptool.py --chip esp32 --port /dev/cu.usbserial-XXXX --baud 460800 write_flash 0x0 flow-ctrl-v1.1.0-cyd2usb-mac.bin
 ```
 
 Later updates: flash `flow-ctrl-v…-cyd2usb-mac-update.bin` at `0x10000` (or use the Flash page) so the
 board keeps its pairing.
 
-The screen shows "Flow Ctrl · v1.0.0 · Mac" with the WOODWERD badge and the push-to-talk chord for four seconds, then comes up with an amber dot and
+The screen shows "Flow Ctrl · v1.1.0 · Mac" with the WOODWERD badge and the push-to-talk chord for four seconds, then comes up with an amber dot and
 "Pairing…". (Long-press the **Flow Ctrl** title in the top-left corner at any time to see that again,
 with the chord it sends and its Bluetooth address. Tap anywhere to close. The **Forget pairing**
 button there — two taps — is the fix if the Mac and the board ever disagree about the pairing.)
@@ -40,7 +40,7 @@ chord, the firmware's chord is a build flag — see the README.)
 two custom transforms and give them the shortcuts **Opt + 3** and **Opt + 4**. Suggested prompts are
 in the README. Prompt Engineer is built in and needs nothing.
 
-**On a Windows PC instead.** Flash `flow-ctrl-v1.0.0-cyd2usb-win.bin`, or use the Windows button on the
+**On a Windows PC instead.** Flash `flow-ctrl-v1.1.0-cyd2usb-win.bin`, or use the Windows button on the
 [Flash page](flash/index.md) (same board; the screen says
 Alt/Ctrl instead of Opt/Cmd and *Select all* sends `Ctrl+A`). Pair in Settings → Bluetooth → Add
 device. In Wispr Flow for Windows set push-to-talk to **Ctrl + Alt + T** — that is exactly what the
