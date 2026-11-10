@@ -6,9 +6,11 @@ from PIL import Image, ImageDraw, ImageFont
 src, out = sys.argv[1], sys.argv[2]
 BG = (244, 241, 236); INK = (17, 17, 17); SOFT = (107, 103, 96); BEZEL = (28, 28, 28); RED = (229, 72, 77)
 FD = "/usr/share/fonts/truetype/dejavu/"
+FM = "/System/Library/Fonts/Supplemental/"   # macOS
 def font(sz, bold=False):
-    for n in (("DejaVuSans-Bold.ttf" if bold else "DejaVuSans.ttf"),):
-        try: return ImageFont.truetype(FD + n, sz)
+    for n in (FD + ("DejaVuSans-Bold.ttf" if bold else "DejaVuSans.ttf"),
+              FM + ("Arial Bold.ttf" if bold else "Arial Unicode.ttf")):
+        try: return ImageFont.truetype(n, sz)
         except OSError: pass
     return ImageFont.load_default()
 F_NUM, F_TXT, F_HEAD, F_SMALL = font(22, True), font(21), font(22, True), font(17)
@@ -34,10 +36,11 @@ def guide(name, out_name, pts, items, title=None):
         d.text((tx + 30 if pts else tx, ty), t, font=F_TXT, fill=INK); ty += 62 if len(items) < 7 else 52
     c.save(os.path.join(out, out_name)); print("wrote", out_name)
 
-# Dictate: dot/title · hand · trash · selector · bar · send
+# Dictate: dot/title · hand · trash · selector · bar · send · send now
 guide("idle", "guide-dictate.png",
-      [(8, 8), (132, 6), (186, 6), (262, 6), (40, 64), (40, 176)],
-      ["Status · long-press for About", "Hands-free", "Discard (Esc / undo)", "Page selector", "Hold to talk", "Send"])
+      [(8, 8), (132, 6), (186, 6), (262, 6), (40, 64), (40, 176), (248, 176)],
+      ["Status · long-press for About", "Hands-free", "Discard (Esc / undo)", "Page selector", "Hold to talk", "Send",
+       "Send now (Cmd + Return)"])
 guide("hf", "guide-handsfree.png", [],
       ["Hand and dot turn red", "Red bars in the bar", "Time counts up", "Tap the bar to stop", "Trash = cancel (✕)", "Long-press hand = reset"],
       title="Hands-free running")
@@ -68,3 +71,15 @@ c = Image.new("RGB", (1376, 1568), (34, 34, 34))
 for i, n in enumerate(names):
     c.paste(screen(n).resize((640, 480), Image.LANCZOS), (32 + (i % 2) * 672, 32 + (i // 2) * 512))
 c.save(os.path.join(out, "screen-states.png")); print("wrote screen-states.png")
+
+# Portrait states, one row, for the firmware page
+names = [("idle", "Ready"), ("hold", "Holding"), ("hf", "Hands-free"), ("xf", "Transform"), ("about", "About")]
+pad, gap = 10, 28
+fw, fh = 480 + 2 * pad, 640 + 2 * pad
+c = Image.new("RGB", (len(names) * (fw + gap) + gap, fh + 100), BG); d = ImageDraw.Draw(c)
+for i, (n, cap) in enumerate(names):
+    x = gap + i * (fw + gap)
+    d.rounded_rectangle((x, 30, x + fw - 1, 30 + fh - 1), radius=18, fill=BEZEL)
+    c.paste(Image.open(os.path.join(src, f"p_{n}.ppm")).convert("RGB").resize((480, 640), Image.LANCZOS), (x + pad, 30 + pad))
+    d.text((x + fw // 2, 30 + fh + 32), cap, font=F_TXT, fill=INK, anchor="mm")
+c.save(os.path.join(out, "screen-states-portrait.png")); print("wrote screen-states-portrait.png")

@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.1.0 — 2026-11-09
+- **Send now.** A square button to the right of **Send**, in landscape and portrait. It presses `Cmd+Return`
+  on the Mac build and `Ctrl+Return` on the Windows build, and the screen says "Sent now". **Send** is
+  narrower to make room and still presses a plain Return.
+- The square shows the keys it presses over its name: the Command key and the return arrow on Mac, the
+  word Ctrl and the return arrow on Windows. It dims while you hold to talk and waits for pairing, as Send does.
+- New icon: the Command key (`tools/make_icons.py`).
+- `tools/sim/make_guide.py` now writes `docs/screen-states-portrait.png` too, and finds a font on macOS.
+
 ## v1.0.0 — 2026-11-01
 First stable release.
 

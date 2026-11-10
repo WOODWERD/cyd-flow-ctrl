@@ -73,6 +73,8 @@ This is the page it wakes up on and the one you will live on.
 6. **Send.** A Return key. When you dictate into a chat box or a Claude prompt, tap this once the
    words have appeared and it goes. It is a separate key on purpose: Wispr pastes a beat *after*
    you let go, and a Return fired too early would send an empty message.
+7. **Send now.** The square beside Send. It presses `Cmd+Return` (`Ctrl+Return` on the Windows build),
+   for apps where that sends a message at once. The square shows the keys it presses.
 
 
 ## Change the screen direction

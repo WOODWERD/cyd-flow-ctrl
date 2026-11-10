@@ -10,6 +10,7 @@ tagging a version; if one fails, it is not a release.
 | 2 | **Reconnect.** Do nothing. | Green dot within ~15 s. No re-pairing needed. If instead the status says "Remove Flow Ctrl on the computer, then add it again", do that once — the board found the Mac's key no longer matched — and note it. |
 | 3 | **About.** Long-press the *Flow Ctrl* title. Then tap anywhere. | Page shows the version you flashed, the build, the chord, the address and "connected". The *Light sensor* value rises when you cover the light pipe and falls under a torch. Closes on tap. A short tap on the title does nothing. |
 | 4 | **Hold.** Hold, say one sentence, release. Tap **SEND**. | Text pastes at the cursor after release. Return is sent. |
+| 4a | **Send now.** Hold, say one sentence, release. Tap the **Send now** square. | `Cmd+Return` is sent (`Ctrl+Return` on the Windows build). Toast says "Sent now". The square dims with SEND while you hold. |
 | 5 | **Undo.** Hold, say one sentence, release, wait for the paste, tap the **trash**. | The pasted sentence disappears. Toast says "Undo". |
 | 6 | **Hands-free.** Tap the hand. Say two sentences with a long pause. Watch Wispr's bar collect the words (that is normal — nothing pastes until you stop). Tap the **black bar**. | The hand and dot turn red, red bars in the black bar, status line counts up "m:ss · TAP TO STOP". On the tap, one paste containing both sentences lands in the document and the screen goes back to idle. |
 | 7 | **Cancel.** Tap the hand, say something, tap the **trash**. | Nothing pastes. Toast "Cancelled — nothing sent". Screen goes back to idle. |
@@ -24,7 +25,7 @@ tagging a version; if one fails, it is not a release.
 | # | Step | Pass looks like |
 |---|---|---|
 | 13 | **Portrait.** Tap **PORTRAIT**. | The screen redraws in portrait with the USB cable at the bottom: status line, Hands-free and Discard, the black pill, Send. Toast names the side the USB is on. The dot stays green (no reconnect). |
-| 14 | **Touch in portrait.** Tap Hands-free, Discard, Send, and hold the pill, corner to corner. | Every tap lands on the button under your finger. If taps land mirrored or off by a quarter turn, note which rotation and report the `-DTOUCH_DEBUG` output. |
+| 14 | **Touch in portrait.** Tap Hands-free, Discard, Send, Send now, and hold the pill, corner to corner. | Every tap lands on the button under your finger. If taps land mirrored or off by a quarter turn, note which rotation and report the `-DTOUCH_DEBUG` output. |
 | 15 | **Portrait steps.** Repeat steps 4–8 in portrait. Tap the two dots top right for Transform and repeat step 9. | Same results as landscape. The Hands-free label turns white on red while it runs; Discard becomes a red ✕ Cancel. |
 | 16 | **Flip.** Long-press the status line › **FLIP**, then again. | USB at the top, then back to the bottom. Touch follows each time (repeat step 14 once flipped). |
 | 17 | **Remembered.** Power-cycle the board. | Splash and screen come back in the last shape and side. An update at `0x10000` keeps it too; a full `0x0` image resets to landscape. |

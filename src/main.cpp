@@ -5,6 +5,7 @@
 //   HANDS-FREE    →  double-tap of the same chord (Wispr's "double-tap to lock" gesture);
 //                    STOP taps the chord once more
 //   SEND          →  Return (tap it once the pasted text has landed)
+//   SEND NOW      →  Cmd+Return / Ctrl+Return, the square beside SEND
 //   DISCARD (trash)  →  Esc during hands-free (cancel), else Cmd+Z / Ctrl+Z (undo the last paste)
 // Page 2 "TRANSFORM": Wispr Transforms on the current selection (table below): Prompt Engineer,
 //   Drawing note, Client email — plus ⌘A select-all and ⌥O view-diff.
@@ -25,6 +26,7 @@ LV_IMAGE_DECLARE(ic_transform);
 LV_IMAGE_DECLARE(ic_handsfree);
 LV_IMAGE_DECLARE(ic_trash);
 LV_IMAGE_DECLARE(ic_return);
+LV_IMAGE_DECLARE(ic_cmd);
 LV_IMAGE_DECLARE(logo_woodwerd);   // 240x111 A8 badge, tools/make_logo.py
 
 // ---------------- hardware ----------------
@@ -63,12 +65,14 @@ static int SCREEN_H = 240;
 #define SELALL_MODS MOD_CTRL
 #define SELALL_NAME "Ctrl A"
 #define UNDO_MODS   MOD_CTRL
+#define SENDNOW_MODS MOD_CTRL
 #else
 #define HOST_NAME   "Mac"
 #define OPT_NAME    "Opt"
 #define SELALL_MODS MOD_CMD
 #define SELALL_NAME "Cmd A"
 #define UNDO_MODS   MOD_CMD
+#define SENDNOW_MODS MOD_CMD
 #endif
 
 // Chords Wispr Flow listens for (see docs.wisprflow.ai → Supported hotkeys)
@@ -125,7 +129,7 @@ static lv_obj_t* lblLight = nullptr;               // live readout on the About 
 static lv_obj_t *dot, *lblTitle, *btnDiscard, *lblDiscard, *icoTrash = nullptr, *lblDiscardTxt = nullptr;
 static lv_obj_t *btnPtt, *lblStatus;          // the black pill IS the talk button
 static lv_obj_t *btnHf, *icoHf, *lblPill = nullptr, *lblHfTxt = nullptr;   // lblPill: portrait only, the words inside the pill
-static lv_obj_t *btnSend, *lblSend;
+static lv_obj_t *btnSend, *lblSend, *btnSendNow;
 static lv_obj_t *pageDictate, *pageXf, *segKnob, *tabDictate, *tabXf, *icoDictate, *icoXf;
 static lv_obj_t* pageDot[2];   // portrait page indicator (replaces the lozenge)
 static int knobX[2];
@@ -410,7 +414,7 @@ static void render_state() {
   lv_obj_set_style_outline_width(btnPtt, ptt ? 3 : 0, 0);
 
   // SEND steps back while holding; the hands-free chip goes solid red while a session runs
-  dim(btnSend, ptt); dim(btnHf, ptt);
+  dim(btnSend, ptt); dim(btnSendNow, ptt); dim(btnHf, ptt);
   lv_obj_set_style_bg_opa(btnHf, hf ? LV_OPA_COVER : LV_OPA_TRANSP, 0);
   lv_obj_set_style_image_recolor(icoHf, C(hf ? C_ACCENT_TEXT : C_ACCENT_INK), 0);
   lv_obj_set_style_image_opa(icoHf, on ? LV_OPA_COVER : LV_OPA_40, 0);
@@ -430,8 +434,8 @@ static void render_state() {
   lv_obj_set_style_text_color(lblDiscard, C(hf ? C_ACCENT_INK : C_TEXT_2), 0);
 
   // disable buttons until paired
-  if (on) { lv_obj_remove_state(btnPtt, LV_STATE_DISABLED); lv_obj_remove_state(btnHf, LV_STATE_DISABLED); lv_obj_remove_state(btnSend, LV_STATE_DISABLED); lv_obj_remove_state(btnDiscard, LV_STATE_DISABLED); }
-  else    { lv_obj_add_state(btnPtt, LV_STATE_DISABLED);    lv_obj_add_state(btnHf, LV_STATE_DISABLED);    lv_obj_add_state(btnSend, LV_STATE_DISABLED);    lv_obj_add_state(btnDiscard, LV_STATE_DISABLED); }
+  if (on) { lv_obj_remove_state(btnPtt, LV_STATE_DISABLED); lv_obj_remove_state(btnHf, LV_STATE_DISABLED); lv_obj_remove_state(btnSend, LV_STATE_DISABLED); lv_obj_remove_state(btnSendNow, LV_STATE_DISABLED); lv_obj_remove_state(btnDiscard, LV_STATE_DISABLED); }
+  else    { lv_obj_add_state(btnPtt, LV_STATE_DISABLED);    lv_obj_add_state(btnHf, LV_STATE_DISABLED);    lv_obj_add_state(btnSend, LV_STATE_DISABLED);    lv_obj_add_state(btnSendNow, LV_STATE_DISABLED);    lv_obj_add_state(btnDiscard, LV_STATE_DISABLED); }
 
 #ifndef LED_QUIET
   if (!on) led(false, false, ((millis() / 500) % 4) == 0);   // slow blue blink while pairing
@@ -497,6 +501,12 @@ static void send_return() {
   BleKbd::tap(0, KEY_ENTER);
   show_toast("Sent");
 }
+// Send now: Cmd+Return on a Mac, Ctrl+Return on Windows
+static void send_now() {
+  if (cap == CAP_PTT) return;                  // never fire under a held chord
+  BleKbd::press(SENDNOW_MODS); delay(12); BleKbd::press(SENDNOW_MODS, KEY_ENTER); delay(45); BleKbd::releaseAll();
+  show_toast("Sent now");
+}
 // The trash means two things, matching what you'd reach for:
 //  - hands-free running: Esc cancels the open Wispr session, nothing pastes
 //  - otherwise: Undo (Cmd+Z / Ctrl+Z) removes the text the last hold just pasted
@@ -531,6 +541,9 @@ static void hf_event(lv_event_t* e) {
 }
 static void send_event(lv_event_t* e) {
   if (lv_event_get_code(e) == LV_EVENT_CLICKED) send_return();
+}
+static void send_now_event(lv_event_t* e) {
+  if (lv_event_get_code(e) == LV_EVENT_CLICKED) send_now();
 }
 static void discard_event(lv_event_t* e) {
   if (lv_event_get_code(e) == LV_EVENT_CLICKED) discard();
@@ -593,11 +606,45 @@ static lv_obj_t* make_button(lv_obj_t* parent, int x, int y, int w, int h) {
   return b;
 }
 
+// What the SEND NOW square shows: the keys it presses, over its name. Mac: the Command key and the
+// return arrow. Windows: the word Ctrl and the return arrow (Windows has no Ctrl symbol).
+static void send_now_face(lv_obj_t* b, int px_size, const char* name) {
+  lv_obj_set_layout(b, LV_LAYOUT_FLEX);
+  lv_obj_set_flex_flow(b, LV_FLEX_FLOW_COLUMN);
+  lv_obj_set_flex_align(b, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+  lv_obj_set_style_pad_row(b, 5, 0);
+  lv_obj_t* keys = lv_obj_create(b);               // the key row; taps fall through to the button
+  lv_obj_remove_style_all(keys);
+  lv_obj_remove_flag(keys, LV_OBJ_FLAG_CLICKABLE);
+  lv_obj_remove_flag(keys, LV_OBJ_FLAG_SCROLLABLE);
+  lv_obj_set_size(keys, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+  lv_obj_set_layout(keys, LV_LAYOUT_FLEX);
+  lv_obj_set_flex_flow(keys, LV_FLEX_FLOW_ROW);
+  lv_obj_set_flex_align(keys, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+  lv_obj_set_style_pad_column(keys, 3, 0);
+  auto img = [&](const lv_image_dsc_t* src) {
+    lv_obj_t* im = lv_image_create(keys);
+    lv_image_set_src(im, src);
+    lv_obj_set_style_image_recolor(im, C(C_TEXT), 0);
+    lv_obj_set_style_image_recolor_opa(im, LV_OPA_COVER, 0);
+    lv_image_set_scale(im, px_size * 256 / 28);          // icons are drawn at 28 px
+    lv_image_set_inner_align(im, LV_IMAGE_ALIGN_CENTER);
+    lv_obj_set_size(im, px_size, px_size);
+  };
+#ifdef HOST_WIN
+  label(keys, "Ctrl", F_SMALL, C_TEXT);
+#else
+  img(&ic_cmd);
+#endif
+  img(&ic_return);
+  label(b, name, F_TINY, C_TEXT);
+}
+
 // Landscape, 320 x 240 (unchanged from v0.9.7):
 //   top bar    y 6–46   dot + title (long-press → About) · hands-free chip · trash chip · [dictate | transform] switch
 //   Dictate    y 54–132 the black pill = HOLD TO TALK, waveform inside
 //              y 142    status line, 12 px (HOLD TO TALK / LISTENING / m:ss / pairing help)
-//              y 166–232 SEND, full width. During hands-free a tap on the pill stops it.
+//              y 166–232 SEND · SEND NOW (a 66 px square at the right). During hands-free a tap on the pill stops it.
 //   Transform  y 54–174 2 x 2 transforms (first one black) · y 182–222 SELECT ALL · VIEW DIFF
 static void build_landscape(lv_obj_t* scr) {
   // --- pages (full-screen transparent containers; the top bar and toast live on scr) ---
@@ -686,11 +733,14 @@ static void build_landscape(lv_obj_t* scr) {
   lv_obj_set_pos(lblStatus, px, py + ph + 10);
 
   const int ry = 166, rh = 66;
-  btnSend = make_button(pageDictate, px, ry, pw, rh);
+  btnSend = make_button(pageDictate, px, ry, pw - rh - 8, rh);
   lblSend = label(btnSend, "SEND", F_LABEL, C_TEXT);
   lv_obj_set_style_text_letter_space(lblSend, 1, 0);
   lv_obj_center(lblSend);
   lv_obj_add_event_cb(btnSend, send_event, LV_EVENT_ALL, nullptr);
+  btnSendNow = make_button(pageDictate, px + pw - rh, ry, rh, rh);
+  send_now_face(btnSendNow, 20, "Send now");
+  lv_obj_add_event_cb(btnSendNow, send_now_event, LV_EVENT_ALL, nullptr);
 
   // --- Transform: 2 x 2 (table-driven, first one black) + SELECT ALL · VIEW DIFF ---
   {
@@ -736,7 +786,7 @@ static void build_landscape(lv_obj_t* scr) {
 //              toasts appear over this line
 //   y 34–88    HANDS-FREE (hand icon) · DISCARD (trash icon), 103 x 54 each
 //   y 98–223   the black pill = HOLD TO TALK, waveform + words inside
-//   y 233–310  SEND, full width, return-key icon
+//   y 233–310  SEND, return-key icon · SEND NOW, a 77 px square at the right
 // Pill and Send split their shared height 125 : 77 (the golden section, to the pixel).
 //   Transform  y 34–222 three full-width rows (first black) · y 233–310 SELECT ALL · VIEW DIFF
 static void build_portrait(lv_obj_t* scr) {
@@ -830,7 +880,7 @@ static void build_portrait(lv_obj_t* scr) {
 
   // --- send ---
   const int ry = 233, rh = 77;
-  btnSend = make_button(pageDictate, px, ry, pw, rh);
+  btnSend = make_button(pageDictate, px, ry, pw - rh - 10, rh);
   lv_obj_set_style_radius(btnSend, 12, 0);
   lv_obj_set_style_bg_opa(btnSend, LV_OPA_TRANSP, 0);
   lv_obj_set_style_bg_opa(btnSend, LV_OPA_COVER, LV_STATE_PRESSED);
@@ -840,6 +890,14 @@ static void build_portrait(lv_obj_t* scr) {
   icon(btnSend, &ic_return, C_TEXT, 24);
   lblSend = label(btnSend, "Send", F_LABEL, C_TEXT);
   lv_obj_add_event_cb(btnSend, send_event, LV_EVENT_ALL, nullptr);
+  btnSendNow = make_button(pageDictate, px + pw - rh, ry, rh, rh);
+  lv_obj_set_style_radius(btnSendNow, 12, 0);
+  lv_obj_set_style_bg_opa(btnSendNow, LV_OPA_TRANSP, 0);
+  lv_obj_set_style_bg_opa(btnSendNow, LV_OPA_COVER, LV_STATE_PRESSED);
+  lv_obj_set_style_border_width(btnSendNow, 2, 0);
+  lv_obj_set_style_border_color(btnSendNow, C(C_TEXT), 0);
+  send_now_face(btnSendNow, 22, "Send now");
+  lv_obj_add_event_cb(btnSendNow, send_now_event, LV_EVENT_ALL, nullptr);
 
   // --- Transform: three full-width rows (first black) + SELECT ALL · VIEW DIFF ---
   for (size_t i = 0; i < N_XFORMS && i < 3; i++) {

@@ -33,7 +33,7 @@ Landscape 320 × 240 or portrait 240 × 320, a light "paper" theme taken from Wi
 red accent kept for live or destructive states (`-DTHEME_DARK` restores the old dark colours).
 HOLD TO TALK is a 296 × 78 px black bar styled after Wispr's Flow bar, with eleven waveform bars
 inside: dots at rest, white while held (plus a ring around the bar), red during hands-free. Under it a
-12 px status line; under that SEND, full width at 66 px. The top row carries the hands-free hand, the
+12 px status line; under that SEND at 66 px, with the 66 px SEND NOW square at its right. The top row carries the hands-free hand, the
 trash and the page selector. During hands-free the hand turns solid red and a tap anywhere on the bar
 stops the session — the big target, so stopping never takes aim. The RGB LED follows the same state.
 The backlight stays at full brightness — the board is USB-powered, so there is nothing to save and

@@ -10,6 +10,7 @@ the computer, and nothing about your Wispr setup changes.
 - **Hold to talk** — press and hold the big black bar, speak, let go: Wispr transcribes and pastes.
 - **Hands-free** — tap the red hand once to lock in, talk for as long as you like, tap the bar to paste it all.
 - **Send** — a Return key, so a dictated Claude prompt or chat message goes without touching the keyboard.
+- **Send now** — the square beside Send: `Cmd+Return` (`Ctrl+Return` on Windows), for apps where that sends at once.
 - **Discard** — the trash: cancels a running hands-free session (`Esc`), or undoes the last paste (`Cmd+Z`) after a hold.
 - **Transforms** — a second page fires Wispr's AI rewrites (Prompt Engineer, plus your own) on selected text.
 - Printed split case with only USB-C exposed: the [WOODWERD CYD Case](https://woodwerd.github.io/cyd-case/), shared by all WOODWERD CYD builds (STL/STEP, BOM, build guide).
@@ -35,6 +36,7 @@ Wispr's *Push to talk* shortcut to that (Settings → General → Shortcuts), or
 | **Stop** (tap the bar, or the hand again, while hands-free) | chord tapped once | ends the session, pastes |
 | **Hand** (long-press, while hands-free) | nothing | resets the button's state only — use if you stopped Flow from the Mac |
 | **SEND** | `Return` | sends what was just pasted — a Claude prompt, a chat message. Tap it once the words have landed |
+| **Send now** (the square beside SEND) | `Cmd+Return` (`Ctrl+Return` on Windows) | nothing in Wispr — the key goes to the app in front, where it sends at once |
 | **Discard** (trash, top row) — hands-free running | `Esc` | cancels the session, nothing pastes |
 | **Discard** — otherwise | `Cmd+Z` (`Ctrl+Z` on Windows) | undoes the last paste: removes what the hold just dictated |
 | **Page selector** (lozenge, top row) | nothing | slides between the Dictate and Transform pages |
