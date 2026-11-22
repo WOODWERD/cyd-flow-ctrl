@@ -59,7 +59,24 @@ static int SCREEN_H = 240;
 
 // Host flavour: only key *names* on screen and the Select-all modifier differ. The HID codes the
 // board sends are identical; the OS maps Opt→Alt and Cmd→Win.
-#ifdef HOST_WIN
+// HOST_LINUX (Omarchy / Hyprland, see omarchy/) goes further: there is no Wispr Flow on Linux, so
+// Hyprland binds each chord to a command (omarchy/flow-ctrl.lua). Hands-free, cancel and the
+// transforms get chords of their own, because those commands can't see a double tap or an Esc.
+#if defined(HOST_LINUX)
+#define HOST_NAME   "Linux"
+#define OPT_NAME    "Alt"
+#define SELALL_MODS MOD_CTRL
+#define SELALL_NAME "Ctrl A"
+#define UNDO_MODS   MOD_CTRL
+#define SENDNOW_MODS MOD_CTRL
+#define HF_MODS     (MOD_CTRL | MOD_OPT)   // Ctrl + Alt + H toggles hands-free dictation
+#define HF_KEY      KEY_H
+#define CANCEL_MODS (MOD_CTRL | MOD_OPT)   // Ctrl + Alt + X cancels it, nothing typed
+#define CANCEL_KEY  KEY_X
+#define XF_MODS     (MOD_CTRL | MOD_OPT)   // Ctrl + Alt + 2/3/4: flow-ctrl-transform on the selection
+#define XF_NAME(n)  "Ctrl Alt " n
+#define DIFF_LABEL  "UNDO"                 // no diff view on Linux: undo the last transform instead
+#elif defined(HOST_WIN)
 #define HOST_NAME   "Windows"
 #define OPT_NAME    "Alt"
 #define SELALL_MODS MOD_CTRL
@@ -73,6 +90,13 @@ static int SCREEN_H = 240;
 #define SELALL_NAME "Cmd A"
 #define UNDO_MODS   MOD_CMD
 #define SENDNOW_MODS MOD_CMD
+#endif
+#ifndef XF_MODS
+#define XF_MODS     MOD_OPT
+#define XF_NAME(n)  OPT_NAME " " n
+#endif
+#ifndef DIFF_LABEL
+#define DIFF_LABEL  "VIEW DIFF"
 #endif
 
 // Chords Wispr Flow listens for (see docs.wisprflow.ai → Supported hotkeys)
@@ -91,9 +115,9 @@ static int SCREEN_H = 240;
 // Wispr Transforms (Settings → Transforms). Act on the current selection. Add a row = a new button.
 struct Transform { const char* name; const char* keys; const char* note; uint8_t mods; uint8_t key; };
 static const Transform XFORMS[] = {
-  { "PROMPT ENGINEER", OPT_NAME " 2", "built in",    MOD_OPT, KEY_2 },
-  { "DRAWING NOTE",    OPT_NAME " 3", "callouts",    MOD_OPT, KEY_3 },
-  { "CLIENT EMAIL",    OPT_NAME " 4", "client tone", MOD_OPT, KEY_4 },
+  { "PROMPT ENGINEER", XF_NAME("2"), "built in",    XF_MODS, KEY_2 },
+  { "DRAWING NOTE",    XF_NAME("3"), "callouts",    XF_MODS, KEY_3 },
+  { "CLIENT EMAIL",    XF_NAME("4"), "client tone", XF_MODS, KEY_4 },
 };
 #define N_XFORMS (sizeof(XFORMS) / sizeof(XFORMS[0]))
 
@@ -474,6 +498,10 @@ static void ptt_start() {
 }
 static void ptt_end() {
   if (cap != CAP_PTT) return;
+#ifdef HOST_LINUX
+  BleKbd::press(PTT_MODS);            // key up first, then the modifiers, so Hyprland's release bind fires
+  delay(12);
+#endif
   BleKbd::releaseAll();
   cap = CAP_IDLE;
   render_state();
@@ -486,8 +514,18 @@ static void chord_tap() {
   delay(45);
   BleKbd::releaseAll();
 }
+static void chord(uint8_t mods, uint8_t key) {
+  BleKbd::press(mods); delay(12); BleKbd::press(mods, key); delay(45); BleKbd::releaseAll();
+}
 static void hf_toggle() {
   if (cap == CAP_PTT) return;
+#ifdef HOST_LINUX
+  chord(HF_MODS, HF_KEY);                // one chord both starts and stops (omarchy dictation toggle)
+  if (cap == CAP_HANDSFREE) { cap = CAP_IDLE; show_toast("Pasted"); }
+  else                      { cap = CAP_HANDSFREE; capStart = millis(); }
+  render_state();
+  return;
+#endif
   if (cap == CAP_HANDSFREE) {
     chord_tap();                         // one tap of the PTT chord ends the hands-free session
     cap = CAP_IDLE; show_toast("Pasted");
@@ -513,7 +551,11 @@ static void send_now() {
 static void discard() {
   if (cap == CAP_PTT) return;                  // never fire under a held chord
   if (cap == CAP_HANDSFREE) {
+#ifdef HOST_LINUX
+    chord(CANCEL_MODS, CANCEL_KEY);
+#else
     BleKbd::tap(0, KEY_ESC);
+#endif
     cap = CAP_IDLE;
     show_toast("Cancelled — nothing sent");
   } else {
@@ -589,8 +631,13 @@ static void select_all_event(lv_event_t* e) {
 }
 static void diff_event(lv_event_t* e) {
   if (lv_event_get_code(e) != LV_EVENT_CLICKED) return;
-  BleKbd::press(MOD_OPT); delay(12); BleKbd::press(MOD_OPT, KEY_O); delay(45); BleKbd::releaseAll();
+#ifdef HOST_LINUX
+  chord(UNDO_MODS, KEY_Z);               // puts back the text the transform replaced
+  show_toast("Undo");
+#else
+  chord(MOD_OPT, KEY_O);
   show_toast("View diff");
+#endif
 }
 
 static lv_obj_t* make_button(lv_obj_t* parent, int x, int y, int w, int h) {
@@ -631,7 +678,7 @@ static void send_now_face(lv_obj_t* b, int px_size, const char* name) {
     lv_image_set_inner_align(im, LV_IMAGE_ALIGN_CENTER);
     lv_obj_set_size(im, px_size, px_size);
   };
-#ifdef HOST_WIN
+#if defined(HOST_WIN) || defined(HOST_LINUX)
   label(keys, "Ctrl", F_SMALL, C_TEXT);
 #else
   img(&ic_cmd);
@@ -776,7 +823,7 @@ static void build_landscape(lv_obj_t* scr) {
       lv_obj_add_event_cb(b, cb, LV_EVENT_CLICKED, nullptr);
     };
     util(gx, "SELECT ALL", select_all_event);
-    util(gx + gw + g, "VIEW DIFF", diff_event);
+    util(gx + gw + g, DIFF_LABEL, diff_event);
   }
 }
 
@@ -924,7 +971,7 @@ static void build_portrait(lv_obj_t* scr) {
     lv_obj_add_event_cb(b, cb, LV_EVENT_CLICKED, nullptr);
   };
   util(px, "SELECT ALL", select_all_event);
-  util(px + halfW + 10, "VIEW DIFF", diff_event);
+  util(px + halfW + 10, DIFF_LABEL, diff_event);
 }
 
 static void ui_build(bool splash) {

@@ -6,6 +6,7 @@
 pip install platformio
 pio run -e cyd2usb-mac      # USB-C / 2-USB board (ST7789, BGR), Mac host
 pio run -e cyd2usb-win      # same board, Windows host (Alt/Ctrl labels, Ctrl+A)
+pio run -e cyd2usb-linux    # same board, Linux / Omarchy host (Hyprland binds in omarchy/)
 pio run -e cyd              # original micro-USB board (ILI9341)
 tools/merge.sh cyd2usb-mac  # full 0x0 image, -update.bin (0x10000) and the web-flasher pieces; version from include/version.h
 ```
@@ -18,6 +19,7 @@ Build flags (add to `build_flags` or `-D` on the command line):
 | `PTT_KEY` | `KEY_T` | the key in the chord (`KEY_T`, `KEY_SPACE`, or any HID usage code) |
 | `PTT_LABEL` | `"Ctrl + Opt + T"` | what the About page shows for the chord — set it if you change the chord |
 | `HOST_WIN` | unset | Windows host: Alt/Ctrl names on screen, `Ctrl+A` for Select all (the `cyd2usb-win` env sets it; `cyd2usb-mac` is the default) |
+| `HOST_LINUX` | unset | Linux host for Omarchy: as `HOST_WIN`, plus Hands-free on `Ctrl+Alt+H`, cancel on `Ctrl+Alt+X`, transforms on `Ctrl+Alt+2/3/4` and **UNDO** in place of *View diff* (the `cyd2usb-linux` env sets it; see [Omarchy](OMARCHY.md)) |
 | `PANEL_ROTATION` | `1` | Shape on first boot: `1` or `3` landscape, `2` or `0` portrait. About changes it later |
 | `BLE_NAME` | `"Flow Ctrl"` | name shown in Bluetooth settings |
 | `DIM_AFTER_MS` | `0` | `0` = always full brightness (the board is USB-powered). Set e.g. `45000` to dim after idle; it never turns off |
@@ -49,7 +51,7 @@ you can retune without flashing; `tools/make_guide.py` builds the annotated scre
 ## Code map
 
 ```
-platformio.ini      envs: cyd (ILI9341) / cyd2usb-mac (ST7789, BGR) / cyd2usb-win (+HOST_WIN). Pins from the CYD repo's PINS.md
+platformio.ini      envs: cyd (ILI9341) / cyd2usb-mac (ST7789, BGR) / cyd2usb-win (+HOST_WIN) / cyd2usb-linux (+HOST_LINUX). Pins from the CYD repo's PINS.md
 include/version.h   FW_VERSION — the one place the version lives (banner, splash, About page, merge.sh)
 src/main.cpp        UI (LVGL), touch, state machine, backlight, LED
 src/ble_kbd.*       minimal NimBLE HID keyboard: boot-keyboard report map, press / releaseAll / tap

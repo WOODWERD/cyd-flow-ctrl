@@ -19,6 +19,14 @@ The quickest way to put Flow Ctrl on a board: plug it in, open this page in **Ch
   <span slot="not-allowed">Serial access is blocked here (needs HTTPS).</span>
 </esp-web-install-button>
 
+**For Linux with Omarchy** (Ctrl/Alt on screen; dictation through Omarchy instead of Wispr Flow —
+then run the setup in [Omarchy](../OMARCHY.md)):
+
+<esp-web-install-button manifest="manifest-linux.json">
+  <span slot="unsupported">This browser can't talk to serial ports — use Chrome or Edge.</span>
+  <span slot="not-allowed">Serial access is blocked here (needs HTTPS).</span>
+</esp-web-install-button>
+
 The board shows its version and chord for four seconds at power-up, and any time you long-press the
 **Flow Ctrl** title in the top-left corner.
 
@@ -40,7 +48,9 @@ esptool.py --chip esp32 --port /dev/cu.usbserial-XXXX --baud 460800 write_flash 
 ```
 
 On Windows the port is `COM3`-style and the images are `flow-ctrl-v1.1.0-cyd2usb-win.bin` /
-`…-win-update.bin`.
+`…-win-update.bin`. On Linux the port is `/dev/ttyUSB0` and the images are
+`flow-ctrl-v1.1.0-cyd2usb-linux.bin` / `…-linux-update.bin`. Omarchy's Chromium can use the buttons
+above too.
 
 !!! tip "Updating keeps the pairing"
     The full image at `0x0` also blanks the area where the board keeps its Bluetooth pairing, so the

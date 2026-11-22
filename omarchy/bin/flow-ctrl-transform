@@ -1,0 +1,87 @@
+#!/bin/bash
+# Flow Ctrl Transforms on Omarchy: rewrite the selected text with Claude and paste it back.
+# Usage: flow-ctrl-transform [--copied] <name>
+#   <name>     a prompt in ~/.config/flow-ctrl/transforms/<name>.md (prompt-engineer, drawing-note,
+#              client-email, or one of your own)
+#   --copied   the selection is already on the clipboard (the Lua binds copy it first)
+# Each prompt file starts with a "# Title" line (shown while it works); the rest is the instruction.
+# Settings live in ~/.config/flow-ctrl/env:
+#   ANTHROPIC_API_KEY=sk-ant-...           required
+#   FLOW_CTRL_MODEL=claude-opus-5-5        optional
+#   FLOW_CTRL_EFFORT=low                   optional: low, medium, high
+# https://github.com/WOODWERD/cyd-flow-ctrl
+set -uo pipefail
+
+cfg=${XDG_CONFIG_HOME:-$HOME/.config}/flow-ctrl
+[[ -f $cfg/env ]] && . "$cfg/env"
+model=${FLOW_CTRL_MODEL:-claude-opus-5-5}
+effort=${FLOW_CTRL_EFFORT:-low}
+
+have() { command -v "$1" >/dev/null 2>&1; }
+notify() { have notify-send && notify-send -a "Flow Ctrl" -t "${2:-2500}" "Flow Ctrl" "$1"; }
+fail() { notify "$1" 6000; echo "flow-ctrl-transform: $1" >&2; exit 1; }
+
+copied=0
+if [[ ${1:-} == --copied ]]; then copied=1; shift; fi
+name=${1:-}
+[[ -n $name ]] || { echo "Usage: flow-ctrl-transform [--copied] <name>" >&2; exit 2; }
+prompt_file=$cfg/transforms/$name.md
+[[ -f $prompt_file ]] || fail "No transform called $name. Add $prompt_file."
+[[ -n ${ANTHROPIC_API_KEY:-} ]] || fail "Add ANTHROPIC_API_KEY to $cfg/env to use Transforms."
+for c in curl jq wl-copy wl-paste; do have "$c" || fail "Transforms need $c. Install it with: sudo pacman -S $c"; done
+
+terminal=0
+if have hyprctl; then
+  hyprctl activewindow -j 2>/dev/null | jq -e '(.tags // []) | map(sub("\\*$"; "")) | index("terminal")' >/dev/null && terminal=1
+fi
+# Press a chord in the focused window: Ctrl + key, or Ctrl + Shift + key in a terminal.
+press() {
+  have wtype || fail "Transforms need wtype on this Omarchy release: sudo pacman -S wtype"
+  if ((terminal)); then wtype -M ctrl -M shift -k "$1" -m shift -m ctrl
+  else wtype -M ctrl -k "$1" -m ctrl; fi
+}
+
+# 1. The selection
+if ((!copied)); then
+  sleep 0.15                       # let the board's Ctrl + Alt come up before pressing our own keys
+  wl-copy --clear
+  press c
+  sleep 0.2
+fi
+text=$(wl-paste --no-newline 2>/dev/null || true)
+[[ -n $text ]] || text=$(wl-paste --primary --no-newline 2>/dev/null || true)
+[[ -n $text ]] || fail "Nothing selected. Select the text first (Select all on the button)."
+
+notify "$(head -1 "$prompt_file" | sed 's/^# *//')…"
+
+# 2. Claude
+body=$(jq -n --arg model "$model" --arg effort "$effort" --arg prompt "$(tail -n +2 "$prompt_file")" --arg text "$text" '{
+  model: $model,
+  max_tokens: 16000,
+  output_config: { effort: $effort },
+  fallbacks: "default",
+  system: ($prompt + "\n\nReply with the rewritten text only: no preamble, no quotation marks, no commentary."),
+  messages: [ { role: "user", content: $text } ]
+}')
+resp=$(curl -sS --max-time 120 https://api.anthropic.com/v1/messages \
+  -H "content-type: application/json" \
+  -H "x-api-key: $ANTHROPIC_API_KEY" \
+  -H "anthropic-version: 2026-10-21" \
+  -H "anthropic-beta: server-side-fallback-2026-07-01" \
+  -d "$body") || fail "Couldn't reach Claude. Check the network."
+
+if jq -e '.type == "error"' >/dev/null <<<"$resp"; then
+  fail "Claude: $(jq -r '.error.message' <<<"$resp")"
+fi
+[[ $(jq -r '.stop_reason' <<<"$resp") == refusal ]] && fail "Claude declined this one. Nothing changed."
+out=$(jq -r '[.content[] | select(.type == "text") | .text] | join("")' <<<"$resp")
+[[ -n $out ]] || fail "Claude sent back nothing. Nothing changed."
+
+# 3. Paste it over the selection. Undo on the button puts the original back.
+printf '%s' "$out" | wl-copy
+sleep 0.05
+if [[ -f ${XDG_CONFIG_HOME:-$HOME/.config}/hypr/hyprland.lua ]] && have hyprctl; then
+  hyprctl dispatch 'o.universal_paste' >/dev/null   # Omarchy's own paste, terminal-aware
+else
+  press v
+fi

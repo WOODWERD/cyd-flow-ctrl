@@ -47,6 +47,7 @@ extra:
 nav:
   - Home: index.md
   - Getting started: GETTING_STARTED.md
+  - Omarchy (Linux): OMARCHY.md
   - Case & parts: https://woodwerd.github.io/cyd-case/
   - Flash it: flash/index.md
   - Firmware & code: firmware.md
