@@ -1,0 +1,52 @@
+name: Firmware
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        env: [cyd2usb-mac, cyd2usb-win, cyd2usb-linux, cyd]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - uses: actions/cache@v4
+        with:
+          path: ~/.platformio
+          key: pio-${{ hashFiles('platformio.ini') }}
+      - run: pip install platformio
+      - run: pio run -e ${{ matrix.env }}
+      - run: tools/merge.sh ${{ matrix.env }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flow-ctrl-${{ matrix.env }}
+          path: flow-ctrl-*.bin
+
+  # A new build env has no release image yet: add it to the pull request, so the Flash page and the
+  # esptool instructions have a file to point at. Images already in release/ are never replaced.
+  add-missing-release:
+    needs: build
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: "${{ github.head_ref }}" }
+      - uses: actions/download-artifact@v4
+        with: { path: built, merge-multiple: true }
+      - run: |
+          added=0
+          for f in built/flow-ctrl-*-cyd2usb-*.bin; do
+            [ -e "release/${f##*/}" ] && continue
+            cp "$f" release/ && echo "added ${f##*/}" && added=1
+          done
+          [ "$added" = 1 ] || exit 0
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add release/
+          git commit -m "release: add images for new build envs"
+          git push

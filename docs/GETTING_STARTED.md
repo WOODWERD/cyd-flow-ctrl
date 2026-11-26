@@ -48,6 +48,10 @@ board's chord becomes on Windows. Check what the Windows app assigns to Transfor
 second page. The board bonds to one computer at a time: to move it from a Mac to a PC, forget it on the
 Mac first, or the Mac will keep reconnecting to it.
 
+**On Linux with Omarchy.** There is no Wispr Flow for Linux, so the Linux build drives Omarchy's own
+dictation and does Transforms with Claude. Flash the Linux image and run one setup script; the
+[Omarchy guide](OMARCHY.md) has the steps and what each button does there.
+
 Then put it where your hand rests when you are not typing. It is always on, always full brightness,
 and never sleeps — a button you have to wake up first is not a button.
 

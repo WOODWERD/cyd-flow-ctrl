@@ -69,6 +69,10 @@ image so the screen says Alt/Ctrl and *Select all* sends `Ctrl+A` rather than `W
 bonds to whichever computer pairs it; to move it between a Mac and a PC, forget it on the one you're
 leaving.
 
+**Linux with [Omarchy](https://omarchy.org)** works too, without Wispr (there is no Linux app): flash the
+`-linux` image, run `./omarchy/install.sh`, and the button drives Omarchy's own dictation, with Transforms
+rewritten by Claude. See the [Omarchy guide](docs/OMARCHY.md).
+
 **Pairing gone weird?** About page → **Forget pairing** (tap twice), then remove Flow Ctrl on the computer and add it again. The board also does this by itself if the computer's key stops matching.
 
 **Which firmware is on it?** The version and chord show for four seconds at power-up; long-press the **Flow Ctrl**
@@ -99,6 +103,7 @@ The top row — hands-free hand, trash and the page selector — is shared by bo
 - [Case & parts](https://woodwerd.github.io/cyd-case/) — the WOODWERD CYD Case: bill of materials, which board to buy, printing, heat-set inserts, screws, assembly
 - [Flash it](https://woodwerd.github.io/cyd-flow-ctrl/flash/) — one-click install from Chrome (on the docs site), or esptool
 - [Getting Started](https://woodwerd.github.io/cyd-flow-ctrl/GETTING_STARTED/) — setup, every button and its intent, the three flows, troubleshooting
+- [Omarchy (Linux)](docs/OMARCHY.md) — the Linux build, the setup script, what each button does there
 - [Firmware & code](https://woodwerd.github.io/cyd-flow-ctrl/firmware/) — build flags, code map, how to drive another app with it
 - [Bench test](https://woodwerd.github.io/cyd-flow-ctrl/TESTING/) — the checklist every release has to pass
 - [Changelog](https://woodwerd.github.io/cyd-flow-ctrl/changelog/)

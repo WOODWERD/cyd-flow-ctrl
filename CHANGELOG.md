@@ -1,5 +1,18 @@
 # Changelog
 
+## Omarchy — 2026-11-22
+- **Linux build for [Omarchy](https://omarchy.org).** A new `cyd2usb-linux` env (`-DHOST_LINUX`): Ctrl/Alt on
+  screen, "Connected to Linux", and chords Hyprland can bind. Hold to talk stays `Ctrl+Alt+T` and lets go
+  of the key before the modifiers; Hands-free is `Ctrl+Alt+H` (start and stop), Discard while hands-free
+  is `Ctrl+Alt+X`, the transforms are `Ctrl+Alt+2/3/4`, and *View diff* becomes **UNDO** (`Ctrl+Z`).
+  The Mac and Windows builds are unchanged.
+- `omarchy/`: `install.sh`, the Hyprland binds (`flow-ctrl.lua`, and `flow-ctrl.conf` for older
+  releases), `flow-ctrl-dictate` (Omarchy's selected dictation backend, or Voxtype) and
+  `flow-ctrl-transform` (rewrites the selection with Claude using the prompts in `omarchy/transforms/`).
+- Docs: the [Omarchy guide](docs/OMARCHY.md), and a Linux button on the Flash page.
+- CI: `.github/workflows/firmware.yml` builds every env on each pull request and adds the release images
+  for a new env.
+
 ## v1.1.0 — 2026-11-09
 - **Send now.** A square button to the right of **Send**, in landscape and portrait. It presses `Cmd+Return`
   on the Mac build and `Ctrl+Return` on the Windows build, and the screen says "Sent now". **Send** is

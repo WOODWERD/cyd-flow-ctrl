@@ -11,6 +11,8 @@
 #define KEY_SPACE 0x2C
 #define KEY_ESC   0x29
 #define KEY_T     0x17
+#define KEY_H     0x0B
+#define KEY_X     0x1B
 #define KEY_ENTER 0x28
 #define KEY_A     0x04
 #define KEY_O     0x12

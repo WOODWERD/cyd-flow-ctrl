@@ -1,0 +1,37 @@
+#!/bin/bash
+# Flow Ctrl: drive Omarchy dictation from the desk button.
+# Usage: flow-ctrl-dictate start|stop|toggle|cancel
+# Uses `omarchy-dictation` (any backend Omarchy has selected) and falls back to Voxtype directly
+# on Omarchy releases that don't have it. https://github.com/WOODWERD/cyd-flow-ctrl
+set -u
+
+have() { command -v "$1" >/dev/null 2>&1; }
+notify() { have notify-send && notify-send -a "Flow Ctrl" -t 4000 "Flow Ctrl" "$1"; echo "flow-ctrl-dictate: $1" >&2; }
+
+action=${1:-}
+case "$action" in
+  start|stop|toggle)
+    if have omarchy-dictation; then
+      exec omarchy-dictation "$action"
+    elif have voxtype; then
+      if [[ $action == stop && $(voxtype status 2>/dev/null) == stopped ]]; then exit 0; fi
+      exec voxtype record "$action"
+    fi
+    notify "No dictation installed. Omarchy menu > Setup > Defaults > Dictation."
+    exit 1
+    ;;
+  cancel)
+    backend=voxtype
+    have omarchy-default-dictation && backend=$(omarchy-default-dictation 2>/dev/null || echo voxtype)
+    if [[ $backend == voxtype ]] && have voxtype; then
+      exec voxtype record cancel
+    fi
+    # Superwhisper and Hex have no cancel command Omarchy can reach: stop, and say how to undo.
+    if have omarchy-dictation; then omarchy-dictation stop; fi
+    notify "Stopped. $backend can't cancel, so tap Discard again to undo what it typed."
+    ;;
+  *)
+    echo "Usage: flow-ctrl-dictate start|stop|toggle|cancel" >&2
+    exit 2
+    ;;
+esac
